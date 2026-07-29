@@ -1,0 +1,7 @@
+{
+  "REPLACE_WITH_YOUR_SECURE_API_KEY": {
+    "owner": "REPLACE_ME_WITH_OWNER_NAME",
+    "created": "REPLACE_ME_WITH_ISO_TIMESTAMP_E.G._2026-07-21T14:15:00Z",
+    "active": true
+  }
+}

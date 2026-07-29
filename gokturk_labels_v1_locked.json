@@ -1,0 +1,1847 @@
+{
+  "schema_version": "1.0-locked",
+  "script": "old_turkic_orkhon",
+  "label_set": "consensus_38_v1",
+  "reading_direction": "rtl",
+  "codepoint_authority": "Locked by Han against tamga.org (Tuğrul Çavdar) çevirici reading behavior + official Unicode Old Turkic block (v17.0, U+10C00-10C48)",
+  "design_rules": {
+    "class = letter identity (harf kimliği)": "one class per functionally distinct harf, confirmed by actual reading behavior in tamga.org çevirici, not by codepoint count alone",
+    "core vs variation": "each class has ONE core codepoint (index anchor) + a sample_sources list of variation codepoints (Yenisey regional form, or sound-shift/hece variant) that render as the SAME class",
+    "harmony pairs stay separate": "back (kalın) / front (ince) consonant pairs are distinct classes even when visually similar",
+    "total_classes": 38
+  },
+  "known_exceptions": {
+    "sh_nopolar": "does NOT follow the simple back/front pair pattern of B/D/G/K/L/N/R/S/T/Y. ESH (10C41/42) reads as BOTH aş and eş (context-dependent, non-polar). ASH (10C3F/40) reads ONLY as 'aş' and is folded in here as a variation, not a separate class — this was a live judgment call, revisit if tamga.org treats it as a distinct identity.",
+    "c_nopolar / syllable_ic": "EC (10C32/33) is the context-dependent Ç (reads as aç or eç depending on neighboring letter). IC (10C31) is a SEPARATE, single-reading class (always 'iç'), not a variation of EC — confirmed by Han."
+  },
+  "changelog": [
+    {
+      "date": "2026-07-20",
+      "change": "syllable_ok.sound: added 'ko','ku' (was ['ok','uk']). syllable_oek.sound: added 'kö','kü' (was ['ök','ük']). syllable_ik.sound already had both 'ık' and 'kı', unchanged.",
+      "reason": "These hece damgaları (syllable glyphs) are bidirectionally readable (k+vowel or vowel+k, per Göktürkçe Yazım Kuralları Raporu I.3/III.3) but the sound lists only enumerated one reading direction. Discovered while building rules_engine.py's SpellingEngine (Latin->beklenen class_id dizisi motoru), confirmed by Han."
+    }
+  ],
+  "classes": [
+    {
+      "id": "vowel_a_e",
+      "index": 0,
+      "sound": [
+        "a",
+        "e"
+      ],
+      "category": "vowel",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C00"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰀"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C00",
+          "glyph": "𐰀",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C01",
+          "glyph": "𐰁",
+          "reason": "Yenisey A — bölgesel"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C02",
+          "glyph": "𐰂",
+          "reason": "Yenisey AE — açık e sesi, sessel/bölgesel"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C05",
+          "glyph": "𐰅",
+          "reason": "Yenisey E — kapalı e sesi, sessel/bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [],
+      "notes": ""
+    },
+    {
+      "id": "vowel_i_i",
+      "index": 1,
+      "sound": [
+        "ı",
+        "i"
+      ],
+      "category": "vowel",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C03"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰃"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C03",
+          "glyph": "𐰃",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C04",
+          "glyph": "𐰄",
+          "reason": "Yenisey I/İ — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [],
+      "notes": ""
+    },
+    {
+      "id": "vowel_o_u",
+      "index": 2,
+      "sound": [
+        "o",
+        "u"
+      ],
+      "category": "vowel",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C06"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰆"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C06",
+          "glyph": "𐰆",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "vowel_oe_ue"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "vowel_oe_ue",
+      "index": 3,
+      "sound": [
+        "ö",
+        "ü"
+      ],
+      "category": "vowel",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C07"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰇"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C07",
+          "glyph": "𐰇",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C08",
+          "glyph": "𐰈",
+          "reason": "Yenisey OE/UE — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "vowel_o_u"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "b_back",
+      "index": 4,
+      "sound": [
+        "b"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C09"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰉"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C09",
+          "glyph": "𐰉",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C0A",
+          "glyph": "𐰊",
+          "reason": "Yenisey AB — bölgesel"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C48",
+          "glyph": "𐱈",
+          "reason": "Orhun BASH — 'baş' okunuşu, kalın b barındıran hece/ideogram varyasyonu"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "b_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "b_front",
+      "index": 5,
+      "sound": [
+        "b"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C0B"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰋"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C0B",
+          "glyph": "𐰋",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C0C",
+          "glyph": "𐰌",
+          "reason": "Yenisey AEB — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "b_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "g_back",
+      "index": 6,
+      "sound": [
+        "g"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C0D"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰍"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C0D",
+          "glyph": "𐰍",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C0E",
+          "glyph": "𐰎",
+          "reason": "Yenisey AG — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "g_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "g_front",
+      "index": 7,
+      "sound": [
+        "g"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C0F"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰏"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C0F",
+          "glyph": "𐰏",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C10",
+          "glyph": "𐰐",
+          "reason": "Yenisey AEG — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "g_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "d_back",
+      "index": 8,
+      "sound": [
+        "d"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C11"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰑"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C11",
+          "glyph": "𐰑",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C12",
+          "glyph": "𐰒",
+          "reason": "Yenisey AD — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "d_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "d_front",
+      "index": 9,
+      "sound": [
+        "d"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C13"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰓"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C13",
+          "glyph": "𐰓",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "d_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "z_nopolar",
+      "index": 10,
+      "sound": [
+        "z"
+      ],
+      "category": "consonant",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C14"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰔"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C14",
+          "glyph": "𐰔",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C15",
+          "glyph": "𐰕",
+          "reason": "Yenisey EZ — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [],
+      "notes": ""
+    },
+    {
+      "id": "y_back",
+      "index": 11,
+      "sound": [
+        "y"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C16"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰖"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C16",
+          "glyph": "𐰖",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C17",
+          "glyph": "𐰗",
+          "reason": "Yenisey AY — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "y_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "y_front",
+      "index": 12,
+      "sound": [
+        "y"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C18"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰘"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C18",
+          "glyph": "𐰘",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C19",
+          "glyph": "𐰙",
+          "reason": "Yenisey AEY — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "y_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "k_front",
+      "index": 13,
+      "sound": [
+        "k"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C1A"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰚"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C1A",
+          "glyph": "𐰚",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C1B",
+          "glyph": "𐰛",
+          "reason": "Yenisey AEK — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "k_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "syllable_oek",
+      "index": 14,
+      "sound": [
+        "ök",
+        "ük",
+        "kö",
+        "kü"
+      ],
+      "category": "syllable",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C1C"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰜"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C1C",
+          "glyph": "𐰜",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C1D",
+          "glyph": "𐰝",
+          "reason": "Yenisey OEK — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "syllable_ik",
+        "syllable_ok"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l_back",
+      "index": 15,
+      "sound": [
+        "l"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C1E"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰞"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C1E",
+          "glyph": "𐰞",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C1F",
+          "glyph": "𐰟",
+          "reason": "Yenisey AL — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "l_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l_front",
+      "index": 16,
+      "sound": [
+        "l"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C20"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰠"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C20",
+          "glyph": "𐰠",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "l_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "cluster_ld",
+      "index": 17,
+      "sound": [
+        "ld",
+        "lt"
+      ],
+      "category": "cluster",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C21"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰡"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C21",
+          "glyph": "𐰡",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "m_nopolar",
+        "cluster_nd"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "m_nopolar",
+      "index": 18,
+      "sound": [
+        "m"
+      ],
+      "category": "consonant",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C22"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰢"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C22",
+          "glyph": "𐰢",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "cluster_ld",
+        "cluster_nc"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "n_back",
+      "index": 19,
+      "sound": [
+        "n"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C23"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰣"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C23",
+          "glyph": "𐰣",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "n_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "n_front",
+      "index": 20,
+      "sound": [
+        "n"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C24"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰤"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C24",
+          "glyph": "𐰤",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C25",
+          "glyph": "𐰥",
+          "reason": "Yenisey AEN — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "n_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "cluster_nd",
+      "index": 21,
+      "sound": [
+        "nd",
+        "nt"
+      ],
+      "category": "cluster",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C26"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰦"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C26",
+          "glyph": "𐰦",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C27",
+          "glyph": "𐰧",
+          "reason": "Yenisey ENT — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "cluster_ld",
+        "cluster_nc"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "cluster_nc",
+      "index": 22,
+      "sound": [
+        "nc",
+        "nç"
+      ],
+      "category": "cluster",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C28"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰨"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C28",
+          "glyph": "𐰨",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C29",
+          "glyph": "𐰩",
+          "reason": "Yenisey ENC — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "m_nopolar",
+        "cluster_nd"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "ny_nopolar",
+      "index": 23,
+      "sound": [
+        "ñ",
+        "ny"
+      ],
+      "category": "consonant",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C2A"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰪"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C2A",
+          "glyph": "𐰪",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C2B",
+          "glyph": "𐰫",
+          "reason": "Yenisey ENY — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "ng_nopolar"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "ng_nopolar",
+      "index": 24,
+      "sound": [
+        "ŋ",
+        "ng"
+      ],
+      "category": "consonant",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C2D"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰭"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C2D",
+          "glyph": "𐰭",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C2E",
+          "glyph": "-",
+          "reason": "Yenisey AENG — ince ng okunuşu, bölgesel/sessel"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C2C",
+          "glyph": "𐰬",
+          "reason": "Yenisey ANG — kalın ng okunuşu, bölgesel/sessel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "ny_nopolar"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "p_nopolar",
+      "index": 25,
+      "sound": [
+        "p"
+      ],
+      "category": "consonant",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C2F"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰯"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C2F",
+          "glyph": "𐰯",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C30",
+          "glyph": "𐰰",
+          "reason": "Orhun OP — up/op okunuşu, sessel/hece varyasyonu (Irk Bitig/Yenisey bölgesi)"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [],
+      "notes": ""
+    },
+    {
+      "id": "syllable_ic",
+      "index": 26,
+      "sound": [
+        "iç",
+        "çi"
+      ],
+      "category": "syllable",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C31"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰱"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C31",
+          "glyph": "𐰱",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "c_nopolar"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "c_nopolar",
+      "index": 27,
+      "sound": [
+        "ç"
+      ],
+      "category": "consonant",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C32"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰲"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C32",
+          "glyph": "𐰲",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C33",
+          "glyph": "𐰳",
+          "reason": "Yenisey EC — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "syllable_ic"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "k_back",
+      "index": 28,
+      "sound": [
+        "k",
+        "q"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C34"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰴"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C34",
+          "glyph": "𐰴",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C35",
+          "glyph": "𐰵",
+          "reason": "Yenisey AQ — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "k_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "syllable_ik",
+      "index": 29,
+      "sound": [
+        "ık",
+        "kı"
+      ],
+      "category": "syllable",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C36"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰶"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C36",
+          "glyph": "𐰶",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C37",
+          "glyph": "𐰷",
+          "reason": "Yenisey IQ — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "syllable_ok",
+        "syllable_oek"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "syllable_ok",
+      "index": 30,
+      "sound": [
+        "ok",
+        "uk",
+        "ko",
+        "ku"
+      ],
+      "category": "syllable",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C38"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰸"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C38",
+          "glyph": "𐰸",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C39",
+          "glyph": "𐰹",
+          "reason": "Yenisey OQ — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "syllable_ik",
+        "syllable_oek"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "r_back",
+      "index": 31,
+      "sound": [
+        "r"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C3A"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰺"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C3A",
+          "glyph": "𐰺",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C3B",
+          "glyph": "𐰻",
+          "reason": "Yenisey AR — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "r_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "r_front",
+      "index": 32,
+      "sound": [
+        "r"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C3C"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰼"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C3C",
+          "glyph": "𐰼",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "r_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "s_back",
+      "index": 33,
+      "sound": [
+        "s"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C3D"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰽"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C3D",
+          "glyph": "𐰽",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "s_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "s_front",
+      "index": 34,
+      "sound": [
+        "s"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C3E"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐰾"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C3E",
+          "glyph": "𐰾",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "s_back"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "sh_nopolar",
+      "index": 35,
+      "sound": [
+        "ş"
+      ],
+      "category": "consonant",
+      "harmony": null,
+      "codepoints": {
+        "core_orhun": "U+10C41"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐱁"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C41",
+          "glyph": "𐱁",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C42",
+          "glyph": "𐱂",
+          "reason": "Yenisey ESH — bölgesel"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C3F",
+          "glyph": "-",
+          "reason": "Orhun ASH — sadece 'aş' okunuşu, aynı harfin kalın-sabit hecesel alt formu"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C40",
+          "glyph": "-",
+          "reason": "Yenisey ASH — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [],
+      "notes": ""
+    },
+    {
+      "id": "t_back",
+      "index": 36,
+      "sound": [
+        "t"
+      ],
+      "category": "consonant",
+      "harmony": "back",
+      "codepoints": {
+        "core_orhun": "U+10C43"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐱃"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C43",
+          "glyph": "𐱃",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C44",
+          "glyph": "𐱄",
+          "reason": "Yenisey AT — bölgesel"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C47",
+          "glyph": "𐱇",
+          "reason": "Orhun OT — 'ot' okunuşu, kalın t hece/ideogram varyasyonu"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "t_front"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t_front",
+      "index": 37,
+      "sound": [
+        "t"
+      ],
+      "category": "consonant",
+      "harmony": "front",
+      "codepoints": {
+        "core_orhun": "U+10C45"
+      },
+      "glyph_ref": {
+        "core_orhun": "𐱅"
+      },
+      "sample_sources": [
+        {
+          "kind": "core",
+          "codepoint": "U+10C45",
+          "glyph": "𐱅",
+          "reason": "core identity form"
+        },
+        {
+          "kind": "variation",
+          "codepoint": "U+10C46",
+          "glyph": "𐱆",
+          "reason": "Yenisey AET — bölgesel"
+        },
+        {
+          "kind": "font",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "inscription",
+          "name": "",
+          "path": ""
+        },
+        {
+          "kind": "bitig_cursive",
+          "name": "",
+          "path": ""
+        }
+      ],
+      "confusable_with": [
+        "t_back"
+      ],
+      "notes": ""
+    }
+  ]
+}

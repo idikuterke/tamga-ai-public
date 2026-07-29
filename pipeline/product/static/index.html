@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Göktürkçe Doğrulama Aracı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Old+Turkic&display=swap" rel="stylesheet">
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 60px auto; padding: 0 20px; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; background: #eee; font-size: .9rem; }
+  .tab.active { background: #1a1a1a; color: white; }
+  #drop { border: 2px dashed #999; border-radius: 12px; padding: 48px 20px; text-align: center; cursor: pointer; transition: border-color .2s; }
+  #drop.drag { border-color: #333; background: #f5f5f5; }
+  #preview { max-width: 320px; max-height: 200px; margin: 16px auto; display: none; }
+  #result { margin-top: 24px; }
+  .verdict { font-size: 1.2rem; font-weight: 600; padding: 12px; border-radius: 8px; }
+  .valid { background: #e6f4ea; color: #1e7e34; }
+  .invalid { background: #fdeaea; color: #c0392b; }
+  .word-block { border: 1px solid #eee; border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+  .word-title { font-weight: 600; margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .88rem; }
+  td, th { padding: 5px 8px; border-bottom: 1px solid #eee; text-align: left; }
+  .glyph, .gokturkce-output { font-family: "Noto Sans Old Turkic", sans-serif; }
+  .glyph { font-size: 1.3rem; }
+  #loading { display: none; color: #666; }
+  .hint { color: #777; font-size: .85rem; margin-top: 4px; }
+  #translateBox { display: none; }
+  #translateBox textarea { width: 100%; box-sizing: border-box; font-size: 1rem; padding: 10px; border-radius: 8px; border: 1px solid #ccc; resize: vertical; }
+  #translateBox select { margin-top: 10px; padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; }
+  #translateBox button { margin-top: 10px; margin-left: 8px; padding: 6px 16px; border-radius: 6px; border: none; background: #1a1a1a; color: white; cursor: pointer; }
+  .gokturkce-output { direction: rtl; font-size: 2.6rem; line-height: 1.4; padding: 24px; background: #f7f7f7; border-radius: 12px; margin-top: 16px; word-break: break-all; transition: font-size .1s; }
+
+  #outputControls { display: none; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; background: #f2f2f2; border-radius: 10px; font-size: .85rem; }
+  #outputControls label { display: flex; align-items: center; gap: 6px; }
+  #outputControls select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc; }
+  #outputControls button { padding: 6px 14px; border-radius: 6px; border: none; background: #1a1a1a; color: white; cursor: pointer; }
+
+  /* Dekoratif stiller — CSS tabanlı sahte-3B (text-shadow/gradient), gerçek 3B DEĞİL */
+  .gokturkce-output.style-stone {
+    color: #8a8a8a;
+    background: linear-gradient(145deg, #dcdcdc, #b4b4b4);
+    text-shadow: 1px 1px 0 rgba(255,255,255,.85), -1px -1px 1px rgba(0,0,0,.55), 2px 2px 4px rgba(0,0,0,.25);
+  }
+  .gokturkce-output.style-gold {
+    background: linear-gradient(160deg, #2a1e08, #2a1e08);
+    color: transparent;
+    background-image: linear-gradient(180deg, #fff6c8 0%, #e0a83e 45%, #8a5a12 75%, #4a2e08 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 2px 1px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.35);
+  }
+  .gokturkce-output.style-neon {
+    background: #0a0a12;
+    color: #39ffe4;
+    text-shadow: 0 0 8px #39ffe4, 0 0 18px #39ffe4, 0 0 34px #ff2ee6, 0 0 4px #fff;
+  }
+  .gokturkce-output.style-wood {
+    color: #f0d9b5;
+    background: linear-gradient(160deg, #7a5230, #3f2a15);
+    text-shadow: 1px 1px 0 rgba(255,220,180,.3), -1px -1px 2px rgba(0,0,0,.7), 2px 3px 5px rgba(0,0,0,.5);
+  }
+</style>
+</head>
+<body>
+  <h1>Göktürkçe (Orhun) Glyph Doğrulama</h1>
+
+  <div class="tabs">
+    <div class="tab active" id="tabImage">Görsel Yükle (kelime/cümle)</div>
+    <div class="tab" id="tabSingle">Tek Glyph Testi</div>
+    <div class="tab" id="tabTranslate">Çevirici (Latin→Göktürkçe)</div>
+    <div class="tab" id="tabDecode">Deşifre (Göktürkçe→Latin)</div>
+    <div class="tab" id="tabRender">Görsel/Video Üret</div>
+    <div class="tab" id="tabComposite" style="display:none;">Compositör (AI Görsel)</div>
+  </div>
+
+  <p id="hintImage" class="hint">Birden fazla harf içeren bir görsel yükle (kelime ya da cümle) — otomatik olarak harflere ayrılır, her biri kontrol edilir, ünlü uyumu da doğrulanır.</p>
+  <p id="hintSingle" class="hint" style="display:none">Tek bir işaretin görselini yükle, model onu doğrudan sınıflandırsın.</p>
+  <p id="hintTranslate" class="hint" style="display:none">Latin harflerle bir metin yaz, Göktürkçeye çevrilsin. "Geleneksel" mod ünlü düşürme/ligatür kurallarını uygular; "Modern" mod harf-harf birebir eşler.</p>
+  <p id="hintDecode" class="hint" style="display:none">Göktürkçe Unicode metni (ör. 𐰉𐰆𐰑𐰣 ⁚ 𐱅𐰇𐰼𐰜𐰢) yapıştırın — harfler otomatik deşifre edilip etimolojik EDPT sözlüğünde sorgulansın.</p>
+  <p id="hintRender" class="hint" style="display:none">Metin yazın, stil ve boyut seçerek Göktürkçe görsel oluşturun (API: /api/render).</p>
+  <p id="hintComposite" class="hint" style="display:none">AI üretimi görselinizi yükleyip üzerinde fare ile basılı tutup sürükleyerek dikdörtgen (bbox) çizin ve Göktürkçe metni doğal oranlarında yerleştirin.</p>
+
+  <div id="drop">
+    <p>Görseli buraya sürükle ya da tıkla</p>
+    <img id="preview">
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+  </div>
+
+  <div id="decodeBox" style="display:none;">
+    <textarea id="decodeInput" rows="3" class="gokturkce-output" style="direction:rtl; font-size:1.8rem; height:100px; margin-top:0;" placeholder="örn. 𐰉𐰆𐰑𐰣 ⁚ 𐱅𐰇𐰼𐰜𐰢"></textarea>
+    <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <select id="decodeMode" style="padding:6px 12px; border-radius:6px; border:1px solid #ccc; font-size:0.9rem; background:#fff;">
+        <option value="auto">Otomatik (auto)</option>
+        <option value="geleneksel">Geleneksel (eski Orhun)</option>
+        <option value="modern">Modern (harf-harf)</option>
+      </select>
+      <button id="decodeBtn" style="padding: 8px 20px; border-radius: 6px; border: none; background: #1a1a1a; color: white; cursor: pointer; font-size: 0.95rem;">Deşifre Et</button>
+    </div>
+  </div>
+
+  <div id="translateBox">
+    <textarea id="translateInput" rows="3" placeholder="örn. bodun"></textarea>
+    <div>
+      <select id="translateMode">
+        <option value="geleneksel">Geleneksel (kurallı)</option>
+        <option value="modern">Modern (harf harf)</option>
+      </select>
+      <button id="translateBtn">Çevir</button>
+    </div>
+    <div id="outputControls">
+      <!-- Font seçici - Diğer fontlar lisans netleşince eklenecek. -->
+      <label>Font:
+        <select id="fontSelect">
+          <option value='"Noto Sans Old Turkic"'>Noto Sans Old Turkic</option>
+        </select>
+      </label>
+
+      <!-- Biçimlendirme araç çubuğu -->
+      <div style="display: flex; gap: 4px; align-items: center; border-left: 1px solid #ccc; border-right: 1px solid #ccc; padding: 0 10px; margin: 0 10px;">
+        <button type="button" id="btnBold" style="font-weight:bold; width:30px; height:28px; border:1px solid #ccc; background:#fff; border-radius:4px; cursor:pointer;">B</button>
+        <button type="button" id="btnItalic" style="font-style:italic; width:30px; height:28px; border:1px solid #ccc; background:#fff; border-radius:4px; cursor:pointer;">I</button>
+        <button type="button" id="btnUnderline" style="text-decoration:underline; width:30px; height:28px; border:1px solid #ccc; background:#fff; border-radius:4px; cursor:pointer;">U</button>
+        
+        <select id="alignSelect" style="margin-left: 6px; padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;">
+          <option value="right">Sağa Hizala (RTL)</option>
+          <option value="left">Sola Hizala</option>
+          <option value="center">Ortala</option>
+          <option value="justify">İki Yana Yasla</option>
+        </select>
+      </div>
+
+      <label>Harf Boşluğu: <input type="range" id="letterSpacingSlider" min="-2" max="40" value="0"> <span id="letterSpacingLabel">0px</span></label>
+      <label>Boyut: <input type="range" id="fontSizeSlider" min="32" max="120" value="42"> <span id="fontSizeLabel">42px</span></label>
+      <label>Renk: <input type="color" id="colorPicker" value="#1a1a1a"></label>
+      <label>Stil:
+        <select id="styleSelect">
+          <option value="normal">Düz</option>
+          <option value="stone">Taş Kabartma</option>
+          <option value="gold">Altın Kabartma</option>
+          <option value="neon">Neon</option>
+          <option value="wood">Ahşap Oyma</option>
+        </select>
+      </label>
+      <button id="downloadPngBtn">PNG olarak indir</button>
+    </div>
+  </div>
+
+  <div id="renderBox" style="display:none; margin-bottom: 20px;">
+    <textarea id="renderInput" rows="2" style="width: 100%; box-sizing: border-box; font-size: 1rem; padding: 10px; border-radius: 8px; border: 1px solid #ccc; resize: vertical;" placeholder="gök türk">tengri</textarea>
+    
+    <div style="margin-top:16px; display:flex; gap:14px; flex-wrap:wrap; background: #f2f2f2; padding: 12px 16px; border-radius: 10px; font-size: .85rem; align-items: center;">
+      <label style="display: flex; align-items: center; gap: 6px;">Stil:
+        <select id="renderStyle" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;">
+          <option value="neon">🌟 Neon Işık (Vitrin Stili)</option>
+          <option value="plain">Düz (Sadece Font)</option>
+          <option value="fircha">Fırça / Mürekkep Vuruşu</option>
+          <option value="ink_bleed">Mürekkep Dağılması</option>
+          <option value="stamp">Damga (Mühür Baskısı)</option>
+          <option value="carved">Kazıma / Oyma (Carved)</option>
+          <option value="parchment">Parşömen (Yazı Dokusu)</option>
+          <option value="chalk">Tebeşir / Kömür (Chalk)</option>
+          <option value="ember">Kor / Ateş (Ember)</option>
+          <option value="ash">Kül (Ash)</option>
+          <option value="stencil">Şablon (Stencil)</option>
+        </select>
+      </label>
+      
+      <label style="display: flex; align-items: center; gap: 6px;">Font İskelet:
+        <select id="renderFontVariant" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;">
+          <option value="auto">(Otomatik - Stile Göre)</option>
+          <option value="Regular">Gokturk Regular</option>
+          <option value="Bold">Gokturk Bold</option>
+          <option value="Light">Gokturk Light</option>
+          <option value="Oblique">Gokturk Oblique</option>
+          <option value="Condensed">Gokturk Condensed</option>
+        </select>
+      </label>
+      
+      <label style="display: flex; align-items: center; gap: 6px;">Doku:
+        <select id="renderTexture" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;">
+          <option value="">(Stil Önerisi - Varsayılan)</option>
+          <option value="plain.png">Düz Arka Plan (plain.png)</option>
+          <option value="stone.png">Taş (stone.png)</option>
+          <option value="gold.png">Altın Varak (gold.png)</option>
+          <option value="neon.png">Neon (neon.png)</option>
+          <option value="wood.png">Ahşap (wood.png)</option>
+          <option value="paper.png">Kağıt (paper.png)</option>
+          <option value="leather.png">Deri (leather.png)</option>
+          <option value="parchment.png">Parşömen (parchment.png)</option>
+        </select>
+      </label>
+      <span id="textureSuggestionHint" style="font-size: 0.75rem; color: #555; font-style: italic; margin-left: 4px;">💡 Öneri: Düz Arka Plan (veya alternatif: Taş)</span>
+      
+      <label style="display: flex; align-items: center; gap: 6px;">Boyut: 
+        <input type="range" id="renderSize" min="256" max="1920" step="128" value="512"> 
+        <span id="renderSizeLabel">512</span>
+      </label>
+      
+      <label style="display: flex; align-items: center; gap: 6px;">Bozulma: 
+        <input type="range" id="renderDegradation" min="0" max="1" step="0.1" value="0.0"> 
+        <span id="renderDegradationLabel">0.0</span>
+      </label>
+
+      <label style="display: flex; align-items: center; gap: 6px;">Yazı Rengi:
+        <input type="color" id="renderTextColor" value="#000000" data-custom="false" onchange="this.dataset.custom='true'" oninput="this.dataset.custom='true'" style="height: 26px; width: 36px; padding: 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
+        <button type="button" id="lockColorBtn" onclick="toggleLockColor()" title="Özel rengi kilitle" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #aaa; background: #fff; cursor: pointer; font-size: 0.85rem;">🔓</button>
+        <button type="button" onclick="resetTextColor()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #aaa; background: #fff; cursor: pointer; font-size: 0.75rem;">Varsayılan</button>
+      </label>
+
+      <label style="display: flex; align-items: center; gap: 6px;">Işık Yönü:
+        <select id="renderLightDirection" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem;">
+          <option value="-1,-1">Sol-Üst (Varsayılan)</option>
+          <option value="1,1">Sağ-Alt</option>
+          <option value="0,-1">Üst</option>
+          <option value="-1,0">Sol</option>
+        </select>
+      </label>
+
+      <label id="renderTransparentContainer" style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="checkbox" id="renderTransparentBg"> Şeffaf Arka Plan (PNG)
+      </label>
+
+      <button id="renderBtn" style="padding: 6px 14px; border-radius: 6px; border: none; background: #1a1a1a; color: white; cursor: pointer;">Görsel Üret</button>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:16px; align-items:center; background:#f9f9f9; padding: 12px 16px; border-radius:10px; font-size:.85rem; border:1px solid #e0e0e0; flex-wrap:wrap;">
+      <span style="font-weight:600;">Çıktı Tipi:</span>
+      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+        <input type="radio" name="outputType" value="png" checked> PNG
+      </label>
+      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+        <input type="radio" name="outputType" value="mp4"> MP4 Video
+      </label>
+
+      <div id="videoOptions" style="display:none; gap:14px; align-items:center; margin-left:auto; flex-wrap:wrap;">
+        <label style="display: flex; align-items: center; gap: 6px;">Motion (Hareket):
+          <select id="renderMotion" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;">
+            <option value="parallax" selected>3D Derinlik (Parallax)</option>
+            <option value="zoom">Yakınlaşma (Zoom)</option>
+            <option value="pan">Sağdan Sola Kaydırma (Pan)</option>
+            <option value="fade">Yumuşak Geçiş (Fade)</option>
+          </select>
+        </label>
+        <label style="display: flex; align-items: center; gap: 6px;">Süre: 
+          <input type="range" id="renderDuration" min="3" max="10" step="1" value="5"> 
+          <span id="renderDurationLabel">5s</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="renderResult" style="margin-top: 20px; display: none; text-align: center;">
+      <img id="renderPreview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 0 auto;">
+      <video id="renderPreviewVideo" controls autoplay loop muted class="w-full rounded-lg shadow-md" style="display: none; max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 0 auto;"></video>
+      <div style="margin-top: 12px;">
+        <a id="renderDownloadBtn" download="gokturkce_render.png" style="display: inline-block; padding: 8px 16px; background: #1a1a1a; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem;">PNG İndir</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="compositeBox" style="display:none; margin-bottom: 20px;">
+    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom: 16px;">
+      <div style="flex: 1; min-width: 300px;">
+        <input type="file" id="compFileInput" accept="image/*" style="display:none">
+        <div id="compUploadArea" style="border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; background: #fafafa; margin-bottom: 10px; font-weight: 500;">
+          📁 Arka Plan Görseli Yüklemek İçin Tıklayın veya Sürükleyin
+        </div>
+        
+        <div id="compCanvasContainer" style="position: relative; display: inline-block; max-width: 100%; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background: #eee;">
+          <canvas id="compCanvas" style="cursor: crosshair; display: block; max-width: 100%;"></canvas>
+        </div>
+        <div style="font-size: 0.85rem; color: #555; margin-top: 6px;">Seçilen BBox: <span id="compBboxLabel" style="font-weight: 600; color: #1a1a1a;">100, 100, 400, 150</span> <small>(Fareyle çizerek değiştirin)</small></div>
+      </div>
+      
+      <div style="flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 4px;">Göktürkçe Metin (Unicode):</label>
+          <textarea id="compTextInput" rows="3" style="width: 100%; box-sizing: border-box; font-size: 1.4rem; padding: 10px; border-radius: 8px; border: 1px solid #ccc; direction: rtl;" placeholder="örn. 𐱅𐰭𐰼𐰃">𐱅𐰭𐰼𐰃</textarea>
+        </div>
+        
+        <div>
+          <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 4px;">Zemin Stili / Efekt:</label>
+          <select id="compStyleSelect" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.95rem;">
+            <option value="stone" selected>Taş Kabartma (Stone)</option>
+            <option value="parchment">Parşömen (Parchment)</option>
+            <option value="neon">Neon Işık (Neon)</option>
+            <option value="wood">Ahşap Oyma (Wood)</option>
+            <option value="ink">Mürekkep (Ink)</option>
+            <option value="fircha">Fırça (Brush)</option>
+            <option value="ink_bleed">Mürekkep Dağılması</option>
+            <option value="stamp">Damga (Mühür Baskısı)</option>
+            <option value="carved">Kazıma / Oyma (Carved)</option>
+            <option value="chalk">Tebeşir / Kömür (Chalk)</option>
+            <option value="ember">Kor / Ateş (Ember)</option>
+            <option value="ash">Kül (Ash)</option>
+            <option value="stencil">Şablon (Stencil)</option>
+          </select>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #e9ecef;">
+          <label style="font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer; margin-bottom: 8px;">
+            <input type="checkbox" id="compAutoColor" checked> Otomatik Renk Uyumu (Zemin analizi)
+          </label>
+          
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: #444;">Özel Renk:</label>
+            <input type="color" id="compTextColor" value="#ffd700" style="border: none; width: 36px; height: 28px; cursor: pointer; border-radius: 4px;" title="Metin Rengi">
+            <span style="font-size: 0.75rem; color: #666;">(Oto. kapalıysa geçerli)</span>
+          </div>
+          
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 4px;">
+              <span>Metin Ölçeği (Scale):</span>
+              <span id="compScaleVal">0.8x</span>
+            </div>
+            <input type="range" id="compScaleSlider" min="0.3" max="1.5" step="0.05" value="0.8" style="width: 100%; cursor: pointer;" oninput="document.getElementById('compScaleVal').textContent = this.value + 'x'">
+          </div>
+        </div>
+        
+        <button id="compBtn" style="padding: 10px 20px; border-radius: 8px; border: none; background: #1a1a1a; color: white; cursor: pointer; font-size: 1rem; font-weight: 600; margin-top: auto;">✨ Görsel Üzerine Yerleştir</button>
+      </div>
+    </div>
+    
+    <div id="compResultArea" style="display:none; text-align: center; margin-top: 24px; border-top: 1px solid #eee; padding-top: 20px;">
+      <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Sonuç Görseli</h3>
+      <img id="compResultImg" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0 auto;">
+      <div style="margin-top: 14px;">
+        <a id="compDownloadBtn" download="gokturkce_composit.png" style="display: inline-block; padding: 8px 18px; background: #1a1a1a; color: white; text-decoration: none; border-radius: 6px; font-size: 0.95rem;">PNG İndir</a>
+      </div>
+    </div>
+  </div>
+
+  <p id="loading">Değerlendiriliyor…</p>
+  <div id="result"></div>
+
+  <script>
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const resultEl = document.getElementById('result');
+    const loading = document.getElementById('loading');
+    const tabImage = document.getElementById('tabImage');
+    const tabSingle = document.getElementById('tabSingle');
+    const tabTranslate = document.getElementById('tabTranslate');
+    const tabDecode = document.getElementById('tabDecode');
+    const tabRender = document.getElementById('tabRender');
+    const tabComposite = document.getElementById('tabComposite');
+    const hintImage = document.getElementById('hintImage');
+    const hintSingle = document.getElementById('hintSingle');
+    const hintTranslate = document.getElementById('hintTranslate');
+    const hintDecode = document.getElementById('hintDecode');
+    const hintRender = document.getElementById('hintRender');
+    const hintComposite = document.getElementById('hintComposite');
+    const compositeBox = document.getElementById('compositeBox');
+
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.enable_compositor_tab) {
+          tabComposite.style.display = 'block';
+        }
+      })
+      .catch(e => console.log('Config error:', e));
+    const translateBox = document.getElementById('translateBox');
+    const translateInput = document.getElementById('translateInput');
+    const translateMode = document.getElementById('translateMode');
+    const translateBtn = document.getElementById('translateBtn');
+    const decodeBox = document.getElementById('decodeBox');
+    const decodeInput = document.getElementById('decodeInput');
+    const decodeBtn = document.getElementById('decodeBtn');
+    const outputControls = document.getElementById('outputControls');
+    const fontSizeSlider = document.getElementById('fontSizeSlider');
+    const fontSizeLabel = document.getElementById('fontSizeLabel');
+    const colorPicker = document.getElementById('colorPicker');
+    const styleSelect = document.getElementById('styleSelect');
+    const downloadPngBtn = document.getElementById('downloadPngBtn');
+    const btnBold = document.getElementById('btnBold');
+    const btnItalic = document.getElementById('btnItalic');
+    const btnUnderline = document.getElementById('btnUnderline');
+    const alignSelect = document.getElementById('alignSelect');
+    const fontSelect = document.getElementById('fontSelect');
+    const letterSpacingSlider = document.getElementById('letterSpacingSlider');
+    const letterSpacingLabel = document.getElementById('letterSpacingLabel');
+
+    const renderBox = document.getElementById('renderBox');
+    const renderInput = document.getElementById('renderInput');
+    const renderStyle = document.getElementById('renderStyle');
+    const renderSize = document.getElementById('renderSize');
+    const renderSizeLabel = document.getElementById('renderSizeLabel');
+    const renderDegradation = document.getElementById('renderDegradation');
+    const renderDegradationLabel = document.getElementById('renderDegradationLabel');
+    const renderBtn = document.getElementById('renderBtn');
+    const renderResult = document.getElementById('renderResult');
+    const renderPreview = document.getElementById('renderPreview');
+    const renderPreviewVideo = document.getElementById('renderPreviewVideo');
+    const renderDownloadBtn = document.getElementById('renderDownloadBtn');
+    const videoOptions = document.getElementById('videoOptions');
+    const renderMotion = document.getElementById('renderMotion');
+    const renderDuration = document.getElementById('renderDuration');
+    const renderDurationLabel = document.getElementById('renderDurationLabel');
+
+    let isBold = false;
+    let isItalic = false;
+    let isUnderline = false;
+
+    let mode = 'image'; // 'image' | 'single' | 'translate' | 'decode'
+    let translateDebounceTimer = null;
+    let translateRequestSeq = 0; // eski/geç gelen yanıtları görmezden gelmek için
+
+    tabImage.addEventListener('click', () => setMode('image'));
+    tabSingle.addEventListener('click', () => setMode('single'));
+    tabTranslate.addEventListener('click', () => setMode('translate'));
+    tabDecode.addEventListener('click', () => setMode('decode'));
+    tabRender.addEventListener('click', () => setMode('render'));
+    tabComposite.addEventListener('click', () => setMode('composite'));
+    decodeBtn.addEventListener('click', () => handleDecode());
+    translateBtn.addEventListener('click', () => handleTranslate()); // yedek/manuel tetikleyici
+    translateInput.addEventListener('input', scheduleAutoTranslate);
+    translateMode.addEventListener('change', () => handleTranslate()); // mod değişince anında, debounce'suz
+    fontSizeSlider.addEventListener('input', applyOutputStyle);
+    colorPicker.addEventListener('input', applyOutputStyle);
+    styleSelect.addEventListener('change', applyOutputStyle);
+    downloadPngBtn.addEventListener('click', downloadOutputAsPng);
+    btnBold.addEventListener('click', () => {
+      isBold = !isBold;
+      btnBold.style.background = isBold ? '#ddd' : '#fff';
+      applyOutputStyle();
+    });
+    btnItalic.addEventListener('click', () => {
+      isItalic = !isItalic;
+      btnItalic.style.background = isItalic ? '#ddd' : '#fff';
+      applyOutputStyle();
+    });
+    btnUnderline.addEventListener('click', () => {
+      isUnderline = !isUnderline;
+      btnUnderline.style.background = isUnderline ? '#ddd' : '#fff';
+      applyOutputStyle();
+    });
+    alignSelect.addEventListener('change', applyOutputStyle);
+    fontSelect.addEventListener('change', applyOutputStyle);
+    letterSpacingSlider.addEventListener('input', applyOutputStyle);
+
+    renderSize.addEventListener('input', () => renderSizeLabel.textContent = renderSize.value);
+    renderDegradation.addEventListener('input', () => renderDegradationLabel.textContent = renderDegradation.value);
+    renderDuration.addEventListener('input', () => renderDurationLabel.textContent = renderDuration.value + 's');
+    renderBtn.addEventListener('click', handleRender);
+
+    let lockCustomColor = false;
+    function toggleLockColor() {
+      lockCustomColor = !lockCustomColor;
+      const btn = document.getElementById('lockColorBtn');
+      if (btn) {
+        btn.textContent = lockCustomColor ? '🔒' : '🔓';
+        btn.title = lockCustomColor ? 'Özel renk kilidini aç' : 'Özel rengi kilitle';
+      }
+      const colorInput = document.getElementById('renderTextColor');
+      if (colorInput && lockCustomColor) {
+        colorInput.dataset.custom = 'true';
+      }
+    }
+
+    function resetTextColor() {
+      const colorInput = document.getElementById('renderTextColor');
+      if (colorInput) {
+        colorInput.dataset.custom = 'false';
+        const style = document.getElementById('renderStyle').value;
+        const defaults = {
+          plain: '#000000', stone: '#282828', gold: '#ffd700', neon: '#00ffc8',
+          wood: '#dcbe64', paper: '#281e14', leather: '#28140a', parchment: '#321e0a',
+          fircha: '#191919', ink_bleed: '#140f0a', stamp: '#8b0000', carved: '#323232',
+          chalk: '#d8d4c8', ember: '#ffb432', ash: '#8a8580', stencil: '#202020'
+        };
+        colorInput.value = defaults[style] || '#000000';
+      }
+    }
+    document.getElementById('renderStyle').addEventListener('change', () => {
+      const colorInput = document.getElementById('renderTextColor');
+      if (colorInput && !lockCustomColor) {
+        resetTextColor();
+      }
+      const styleSuggestions = {
+        plain: { primary: 'plain.png', text: '💡 Öneri: Düz Arka Plan (veya alternatif: Taş)' },
+        fircha: { primary: 'paper.png', text: '💡 Öneri: Kağıt (veya alternatif: Parşömen)' },
+        ink_bleed: { primary: 'paper.png', text: '💡 Öneri: Kağıt (veya alternatif: Parşömen)' },
+        stamp: { primary: 'parchment.png', text: '💡 Öneri: Parşömen (veya alternatif: Kağıt)' },
+        carved: { primary: 'stone.png', text: '💡 Öneri: Taş (veya alternatif: Altın Varak / Ahşap)' },
+        parchment: { primary: 'parchment.png', text: '💡 Öneri: Parşömen (veya alternatif: Kağıt)' },
+        chalk: { primary: 'stone.png', text: '💡 Öneri: Taş (veya alternatif: Düz Arka Plan)' },
+        ember: { primary: 'plain.png', text: '💡 Öneri: Düz Arka Plan (veya alternatif: Neon Işık / Taş)' },
+        ash: { primary: 'stone.png', text: '💡 Öneri: Taş (veya alternatif: Düz Arka Plan / Ahşap)' },
+        stencil: { primary: 'wood.png', text: '💡 Öneri: Ahşap (veya alternatif: Deri / Düz Arka Plan)' },
+        neon: { primary: 'neon.png', text: '🌟 Vitrin Stili — yüksek kontrast, karanlık arka plan' }
+      };
+      const val = document.getElementById('renderStyle').value;
+      const sug = styleSuggestions[val] || { primary: '', text: '' };
+      const texSelect = document.getElementById('renderTexture');
+      if (texSelect) {
+        texSelect.value = sug.primary;
+      }
+      const hintEl = document.getElementById('textureSuggestionHint');
+      if (hintEl) {
+        hintEl.textContent = sug.text;
+      }
+
+      const fontVariantSuggestions = {
+        plain: 'Regular',
+        fircha: 'Oblique',
+        ink_bleed: 'Oblique',
+        stamp: 'Bold',
+        carved: 'Bold',
+        parchment: 'Regular',
+        chalk: 'Light',
+        ember: 'Bold',
+        ash: 'Light',
+        stencil: 'Condensed',
+        neon: 'Bold'
+      };
+      const fontVarSelect = document.getElementById('renderFontVariant');
+      if (fontVarSelect && (!fontVarSelect.dataset.userOverridden || fontVarSelect.value === 'auto')) {
+        fontVarSelect.value = fontVariantSuggestions[val] || 'auto';
+      }
+    });
+
+    document.getElementById('renderFontVariant')?.addEventListener('change', () => {
+      document.getElementById('renderFontVariant').dataset.userOverridden = 'true';
+    });
+
+    document.querySelectorAll('input[name="outputType"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const isMp4 = document.querySelector('input[name="outputType"]:checked').value === 'mp4';
+        videoOptions.style.display = isMp4 ? 'flex' : 'none';
+        renderBtn.textContent = isMp4 ? 'Video Üret' : 'Görsel Üret';
+        const transparentContainer = document.getElementById('renderTransparentContainer');
+        if (transparentContainer) transparentContainer.style.display = isMp4 ? 'none' : 'flex';
+      });
+    });
+
+    function applyOutputStyle() {
+      const el = document.querySelector('.gokturkce-output');
+      if (!el) return;
+      
+      const size = fontSizeSlider.value;
+      fontSizeLabel.textContent = size + 'px';
+      el.style.fontSize = size + 'px';
+      
+      const spacing = letterSpacingSlider.value;
+      letterSpacingLabel.textContent = spacing + 'px';
+      el.style.letterSpacing = spacing + 'px';
+      
+      // Font ailesi ayarla
+      el.style.fontFamily = fontSelect.value + ', sans-serif';
+      
+      // Kalınlık ayarla
+      el.style.fontWeight = isBold ? 'bold' : 'normal';
+      
+      // İtalik ayarla
+      el.style.fontStyle = isItalic ? 'italic' : 'normal';
+      
+      // Altı çizili ayarla
+      el.style.textDecoration = isUnderline ? 'underline' : 'none';
+      
+      // Hizalama ayarla
+      el.style.textAlign = alignSelect.value;
+      
+      // Sınıflar ve renk ayarla
+      el.className = 'gokturkce-output' + (styleSelect.value === 'normal' ? '' : ' style-' + styleSelect.value);
+      el.style.color = styleSelect.value === 'gold' ? '' : colorPicker.value;
+    }
+
+    function scheduleAutoTranslate() {
+      clearTimeout(translateDebounceTimer);
+      if (!translateInput.value.trim()) {
+        resultEl.innerHTML = '';
+        loading.style.display = 'none';
+        outputControls.style.display = 'none';
+        return; // boş kutuda istek atma
+      }
+      translateDebounceTimer = setTimeout(() => handleTranslate(), 200);
+    }
+
+    function setMode(m) {
+      mode = m;
+      tabImage.classList.toggle('active', m === 'image');
+      tabSingle.classList.toggle('active', m === 'single');
+      tabTranslate.classList.toggle('active', m === 'translate');
+      tabDecode.classList.toggle('active', m === 'decode');
+      tabRender.classList.toggle('active', m === 'render');
+      tabComposite.classList.toggle('active', m === 'composite');
+      hintImage.style.display = m === 'image' ? 'block' : 'none';
+      hintSingle.style.display = m === 'single' ? 'block' : 'none';
+      hintTranslate.style.display = m === 'translate' ? 'block' : 'none';
+      hintDecode.style.display = m === 'decode' ? 'block' : 'none';
+      hintRender.style.display = m === 'render' ? 'block' : 'none';
+      hintComposite.style.display = m === 'composite' ? 'block' : 'none';
+      drop.style.display = (m === 'translate' || m === 'decode' || m === 'render' || m === 'composite') ? 'none' : 'block';
+      translateBox.style.display = m === 'translate' ? 'block' : 'none';
+      decodeBox.style.display = m === 'decode' ? 'block' : 'none';
+      renderBox.style.display = m === 'render' ? 'block' : 'none';
+      compositeBox.style.display = m === 'composite' ? 'block' : 'none';
+      resultEl.innerHTML = '';
+      outputControls.style.display = 'none';
+      preview.style.display = 'none';
+    }
+
+    async function handleRender() {
+      const text = renderInput.value.trim();
+      if (!text) {
+        resultEl.innerHTML = `<p style="color:#c0392b">Hata: Metin alanı boş olamaz</p>`;
+        return;
+      }
+      
+      const outputType = document.querySelector('input[name="outputType"]:checked').value;
+      const isMp4 = outputType === 'mp4';
+
+      loading.textContent = isMp4 ? 'Render ediliyor (Bu birkaç saniye sürebilir)...' : 'Değerlendiriliyor…';
+      loading.style.display = 'block';
+      resultEl.innerHTML = '';
+      renderResult.style.display = 'none';
+      renderBtn.disabled = true;
+      renderBtn.style.opacity = '0.6';
+      renderBtn.style.cursor = 'not-allowed';
+      
+      const textColorEl = document.getElementById('renderTextColor');
+      const textColor = (textColorEl && textColorEl.dataset.custom === 'true') ? textColorEl.value : null;
+      const transparentBgEl = document.getElementById('renderTransparentBg');
+      const transparentBg = transparentBgEl ? transparentBgEl.checked : false;
+
+      const lightDirStr = document.getElementById('renderLightDirection')?.value || "-1,-1";
+      const lightDirParts = lightDirStr.split(',').map(n => parseInt(n.trim(), 10));
+      const lightDir = (lightDirParts.length === 2 && !isNaN(lightDirParts[0]) && !isNaN(lightDirParts[1])) ? [lightDirParts[0], lightDirParts[1]] : [-1, -1];
+
+      const payload = {
+        text: text,
+        style: renderStyle.value,
+        size: parseInt(renderSize.value, 10),
+        degradation: parseFloat(renderDegradation.value),
+        text_color: textColor,
+        transparent_bg: !isMp4 && transparentBg,
+        texture_var: document.getElementById('renderTexture')?.value || null,
+        light_direction: lightDir,
+        font_variant: document.getElementById('renderFontVariant')?.value || 'auto'
+      };
+
+      if (isMp4) {
+        payload.motion = renderMotion.value;
+        payload.duration = parseInt(renderDuration.value, 10);
+      }
+      
+      const endpoint = isMp4 ? '/api/render_video' : '/api/render';
+      
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': 'internal-web-ui-key-998877'
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+        
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        
+        if (isMp4) {
+          renderPreview.style.display = 'none';
+          renderPreviewVideo.style.display = 'block';
+          renderPreviewVideo.src = url;
+          renderDownloadBtn.download = 'gokturkce_video.mp4';
+          renderDownloadBtn.textContent = 'MP4 Video İndir';
+        } else {
+          renderPreviewVideo.style.display = 'none';
+          renderPreviewVideo.pause();
+          renderPreview.style.display = 'block';
+          renderPreview.src = url;
+          if (transparentBg) {
+            renderPreview.style.background = 'repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 20px 20px';
+          } else {
+            renderPreview.style.background = 'none';
+          }
+          renderDownloadBtn.download = 'gokturkce_render.png';
+          renderDownloadBtn.textContent = 'PNG İndir';
+        }
+
+        renderDownloadBtn.href = url;
+        renderResult.style.display = 'block';
+        
+      } catch (err) {
+        resultEl.innerHTML = `<p style="color:#c0392b; background:#fde8e8; padding:12px; border-radius:8px; border:1px solid #f8b4b4; margin-top:12px;">Hata: ${err.message || err}</p>`;
+      } finally {
+        loading.style.display = 'none';
+        loading.textContent = 'Değerlendiriliyor…';
+        renderBtn.disabled = false;
+        renderBtn.style.opacity = '1';
+        renderBtn.style.cursor = 'pointer';
+      }
+    }
+
+    async function handleTranslate() {
+      const text = translateInput.value.trim();
+      if (!text) {
+        resultEl.innerHTML = '';
+        outputControls.style.display = 'none';
+        return;
+      }
+      const seq = ++translateRequestSeq; // bu isteğin sıra numarası
+      loading.style.display = 'block';
+      try {
+        const res = await fetch('/translate', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-API-Key': 'internal-web-ui-key-998877'
+          },
+          body: JSON.stringify({ text, mode: translateMode.value }),
+        });
+        const data = await res.json();
+        if (seq !== translateRequestSeq) return; // daha yeni bir istek zaten atıldı, bu yanıt eski/geç kalmış
+        renderTranslateResult(data);
+      } catch (err) {
+        if (seq !== translateRequestSeq) return;
+        resultEl.innerHTML = `<p style="color:#c0392b">Hata: ${err}</p>`;
+      } finally {
+        if (seq === translateRequestSeq) loading.style.display = 'none';
+      }
+    }
+
+    function renderTranslateResult(data) {
+      if (!data || !data.sequence) {
+        resultEl.innerHTML = `<p style="color:#c0392b">Hata: ${(data && (data.detail || data.error)) || 'Çeviri sonucu alınamadı'}</p>`;
+        outputControls.style.display = 'none';
+        return;
+      }
+
+      const rows = (data.sequence || []).map(s => `
+        <tr>
+          <td>${s.latin != null ? s.latin : '—'}</td>
+          <td class="glyph">${s.glyph_ref || '—'}</td>
+          <td>${s.class_id}</td>
+          <td>${s.codepoint || '—'}</td>
+        </tr>
+      `).join('');
+
+      resultEl.innerHTML = `
+        <div class="gokturkce-output">${data.gokturkce_text || '—'}</div>
+        <div style="margin-top: 10px; text-align: right;">
+          <button onclick="if(document.getElementById('compTextInput')){document.getElementById('compTextInput').value='${(data.gokturkce_text || '').replace(/'/g, "\\'")}'; setMode('composite');}" style="padding: 6px 14px; border-radius: 6px; border: 1px solid #1a1a1a; background: #fff; color: #1a1a1a; cursor: pointer; font-size: 0.85rem; font-weight: 600;">📌 Bu Metni Compositör'e Taşı</button>
+        </div>
+        <table>
+          <thead><tr><th>Latin</th><th>Glyph</th><th>Sınıf</th><th>Kod noktası</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+      outputControls.style.display = data.gokturkce_text ? 'flex' : 'none';
+      applyOutputStyle();
+    }
+
+    // ---- PNG olarak indir (canvas'a çizerek, seçili boyut/renk/stili uygular) ----
+
+    async function downloadOutputAsPng() {
+      const el = document.querySelector('.gokturkce-output');
+      if (!el) return;
+      const text = el.textContent.trim();
+      if (!text || text === '—') return;
+
+      const size = parseInt(fontSizeSlider.value, 10);
+      const styleName = styleSelect.value;
+      const letterSpacing = parseInt(letterSpacingSlider.value, 10);
+      
+      const stylePart = isItalic ? 'italic' : '';
+      const weightPart = isBold ? 'bold' : '';
+      const fontSpec = `${stylePart} ${weightPart} ${size}px ${fontSelect.value}`.trim().replace(/\s+/g, ' ');
+
+      // Font gerçekten yüklenmeden çizilirse tofu/yanlış glyph çıkabilir.
+      await document.fonts.load(fontSpec, text);
+      await document.fonts.ready;
+
+      // Karakterleri ayır (surrogate çiftleri koru)
+      const chars = [...text];
+      const gap = 20 + letterSpacing; // Güvenli segmentasyon boşluğu (en az 20px) + estetik boşluk
+
+      const measureCanvas = document.createElement('canvas');
+      const measureCtx = measureCanvas.getContext('2d');
+      measureCtx.font = fontSpec;
+      
+      // Her karakteri tek tek ölç
+      const charWidths = chars.map(c => measureCtx.measureText(c).width);
+      const textWidth = charWidths.reduce((sum, w) => sum + w, 0) + gap * (chars.length - 1);
+
+      const padding = size;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(textWidth + padding * 2);
+      canvas.height = Math.ceil(size * 1.8 + padding);
+      const ctx = canvas.getContext('2d');
+
+      drawPngBackground(ctx, canvas.width, canvas.height, styleName);
+
+      ctx.font = fontSpec;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'right'; // Karakter çizim döngüsü için sağa yaslama kullanıyoruz
+
+      const align = alignSelect.value;
+      let xStart;
+      if (align === 'left') {
+        xStart = padding + textWidth;
+      } else if (align === 'center') {
+        xStart = canvas.width / 2 + textWidth / 2;
+      } else {
+        xStart = canvas.width - padding;
+      }
+      const y = canvas.height / 2;
+
+      // Karakterleri sağdan sola doğru tek tek çiz (Göktürkçe RTL)
+      let xPos = xStart;
+      for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        const charWidth = charWidths[i];
+        drawPngStyledText(ctx, char, xPos, y, styleName, colorPicker.value);
+        xPos -= (charWidth + gap);
+      }
+
+      if (isUnderline) {
+        ctx.save();
+        ctx.strokeStyle = styleName === 'gold' ? '#e0a83e' : colorPicker.value;
+        ctx.lineWidth = Math.max(1, size / 16);
+        ctx.beginPath();
+        let startX, endX;
+        const lineY = y + size * 0.6;
+        if (align === 'left') {
+          startX = padding;
+          endX = padding + textWidth;
+        } else if (align === 'center') {
+          startX = canvas.width / 2 - textWidth / 2;
+          endX = canvas.width / 2 + textWidth / 2;
+        } else {
+          startX = canvas.width - padding - textWidth;
+          endX = canvas.width - padding;
+        }
+        ctx.moveTo(startX, lineY);
+        ctx.lineTo(endX, lineY);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'gokturkce.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    function drawPngBackground(ctx, w, h, styleName) {
+      let grad;
+      if (styleName === 'stone') {
+        grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#dcdcdc');
+        grad.addColorStop(1, '#b4b4b4');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      } else if (styleName === 'neon') {
+        ctx.fillStyle = '#0a0a12';
+        ctx.fillRect(0, 0, w, h);
+      } else if (styleName === 'wood') {
+        grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#7a5230');
+        grad.addColorStop(1, '#3f2a15');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      }
+      // "normal" ve "gold": şeffaf arka plan (indirilen PNG'de arka plan yok)
+    }
+
+    function drawPngStyledText(ctx, text, x, y, styleName, plainColor) {
+      ctx.save();
+      if (styleName === 'stone') {
+        ctx.fillStyle = '#8a8a8a';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetX = -2;
+        ctx.shadowOffsetY = -2;
+        ctx.fillText(text, x, y);
+        ctx.shadowColor = 'rgba(255,255,255,0.85)';
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.fillText(text, x, y);
+      } else if (styleName === 'gold') {
+        const tw = ctx.measureText(text).width;
+        const grad = ctx.createLinearGradient(x - tw, y - 40, x, y + 40);
+        grad.addColorStop(0, '#fff6c8');
+        grad.addColorStop(0.45, '#e0a83e');
+        grad.addColorStop(0.75, '#8a5a12');
+        grad.addColorStop(1, '#4a2e08');
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = grad;
+        ctx.fillText(text, x, y);
+      } else if (styleName === 'neon') {
+        ctx.fillStyle = '#39ffe4';
+        ctx.shadowColor = '#39ffe4';
+        ctx.shadowBlur = 20;
+        ctx.fillText(text, x, y);
+        ctx.shadowBlur = 34;
+        ctx.shadowColor = '#ff2ee6';
+        ctx.fillText(text, x, y);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.9;
+        ctx.fillText(text, x, y); // parlak çekirdek
+      } else if (styleName === 'wood') {
+        ctx.fillStyle = '#f0d9b5';
+        ctx.shadowColor = 'rgba(0,0,0,0.7)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 3;
+        ctx.fillText(text, x, y);
+        ctx.shadowColor = 'rgba(255,220,180,0.3)';
+        ctx.shadowOffsetX = -1;
+        ctx.shadowOffsetY = -1;
+        ctx.fillText(text, x, y);
+      } else {
+        ctx.fillStyle = plainColor;
+        ctx.fillText(text, x, y);
+      }
+      ctx.restore();
+    }
+
+    drop.addEventListener('click', () => fileInput.click());
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+    drop.addEventListener('drop', e => {
+      e.preventDefault();
+      drop.classList.remove('drag');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    async function handleFile(file) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      resultEl.innerHTML = '';
+      loading.style.display = 'block';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      const endpoint = mode === 'image' ? '/predict_image' : '/predict';
+
+      try {
+        const res = await fetch(endpoint, { 
+          method: 'POST', 
+          headers: {
+            'X-API-Key': 'internal-web-ui-key-998877'
+          },
+          body: formData 
+        });
+        const data = await res.json();
+        if (mode === 'image') renderImageResult(data);
+        else renderSingleResult(data);
+      } catch (err) {
+        resultEl.innerHTML = `<p style="color:#c0392b">Hata: ${err}</p>`;
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
+    function renderSingleResult(data) {
+      if (!data || !data.top_k) {
+        resultEl.innerHTML = `<p style="color:#c0392b">Hata: ${(data && (data.detail || data.error)) || 'Tahmin sonucu alınamadı'}</p>`;
+        return;
+      }
+
+      const cls = data.valid ? 'valid' : 'invalid';
+      const verdictText = data.valid
+        ? `✓ Geçerli Göktürkçe harfi: ${data.verdict}`
+        : `✗ Geçersiz / emin değil`;
+
+      let rows = (data.top_k || []).map(r => `
+        <tr>
+          <td class="glyph">${r.glyph_ref || '—'}</td>
+          <td>${r.class_id}</td>
+          <td>${(r.sound || []).join(', ')}</td>
+          <td>${((r.confidence || 0) * 100).toFixed(1)}%</td>
+        </tr>
+      `).join('');
+
+      resultEl.innerHTML = `
+        <div class="verdict ${cls}">${verdictText} (güven: ${((data.confidence || 0)*100).toFixed(1)}%)</div>
+        <table>
+          <thead><tr><th>Glyph</th><th>Sınıf</th><th>Ses</th><th>Güven</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderImageResult(data) {
+      if (!data || !data.words || data.words.length === 0) {
+        resultEl.innerHTML = `<div class="verdict invalid">✗ ${(data && (data.detail || data.error)) || 'Görselde hiçbir işaret tespit edilemedi'}</div>`;
+        return;
+      }
+
+      const overallCls = data.overall_valid ? 'valid' : 'invalid';
+      const overallText = data.overall_valid
+        ? `✓ Geçerli — ${data.word_count} kelime, hepsi tutarlı`
+        : `✗ Geçersiz — en az bir kelimede sorun var`;
+
+      let html = `<div class="verdict ${overallCls}">${overallText}</div>`;
+
+      data.words.forEach((w, wi) => {
+        const wCls = w.word_valid ? 'valid' : 'invalid';
+        const wMark = w.word_valid ? '✓' : '✗';
+        let rows = (w.glyphs || []).map(g => `
+          <tr>
+            <td>${g.valid ? '✓' : '✗'}</td>
+            <td>${g.verdict}</td>
+            <td>${((g.confidence || 0) * 100).toFixed(1)}%</td>
+          </tr>
+        `).join('');
+
+        const harmonyNote = w.orthography.harmony_consistent
+          ? `Ünlü uyumu: tutarlı (${w.orthography.dominant_harmony || 'kutup yok'})`
+          : `Ünlü uyumu: İHLAL — ${w.orthography.notes.join(' ')}`;
+
+        html += `
+          <div class="word-block">
+            <div class="word-title" style="color:${w.word_valid ? '#1e7e34' : '#c0392b'}">${wMark} Kelime ${wi + 1}</div>
+            <table>
+              <thead><tr><th></th><th>Sınıf</th><th>Güven</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+            <p class="hint">${harmonyNote}</p>
+          </div>
+        `;
+      });
+
+      resultEl.innerHTML = html;
+    }
+
+    async function handleDecode() {
+      const text = decodeInput.value.trim();
+      const mode = document.getElementById('decodeMode').value;
+      if (!text) {
+        resultEl.innerHTML = '';
+        return;
+      }
+      loading.style.display = 'block';
+      try {
+        const res = await fetch('/decode_text', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-API-Key': 'internal-web-ui-key-998877'
+          },
+          body: JSON.stringify({ text, mode }),
+        });
+        const data = await res.json();
+        renderDecodeResult(data);
+      } catch (err) {
+        resultEl.innerHTML = `<p style="color:#c0392b">Hata: ${err}</p>`;
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
+    function renderDecodeResult(data) {
+      if (!data || !data.words || data.words.length === 0) {
+        resultEl.innerHTML = `<p class="hint">${(data && (data.detail || data.note)) || 'Hiç kelime bulunamadı.'}</p>`;
+        return;
+      }
+
+      let html = '';
+
+      if (data.has_unrecognized_characters) {
+        html += `<div class="verdict invalid" style="margin-bottom: 16px;">⚠️ UYARI: Metinde Göktürkçe alfabesinde yer almayan tanınamayan karakterler tespit edildi. Lütfen doğrudan Göktürkçe Unicode karakter yapıştırın.</div>`;
+      }
+
+      data.words.forEach((w, idx) => {
+        const wmode = w.mode || '?';
+        html += `<div class="word-block">`;
+        html += `<div class="word-title">Kelime #${idx + 1}: <span class="gokturkce-output" style="font-size:1.6rem; padding: 2px 8px; background:none;">${w.raw_gokturk_text}</span> <small style="color:#888; font-size:0.8rem;">[${wmode}]</small></div>`;
+        html += `<div style="font-size:0.85rem; color:#555;">Class ID Dizisi: <code>${(w.class_id_sequence || []).join(', ')}</code></div>`;
+
+        if (w.warning) {
+          html += `<div style="color:#c0392b; margin-top:8px; font-weight:600;">${w.warning}</div>`;
+        } else {
+
+          // --- KATMAN 1: Sözlükte kesin eşleşenler (yeşil) ---
+          const confirmed = w.dictionary_confirmed || [];
+          const matched = w.dictionary_matched_candidates || [];
+          if (confirmed.length > 0) {
+            html += `<div style="margin-top:10px; font-weight:600; color:#1e7e34;">✅ Sözlükte Doğrulananlar (${confirmed.length}):</div>`;
+            html += `<table><thead><tr><th>Aday</th><th>EDPT Sayfa</th></tr></thead><tbody>`;
+            // dedupe by raw_headword
+            const seen = new Set();
+            confirmed.forEach(e => {
+              if (seen.has(e.raw_headword)) return;
+              seen.add(e.raw_headword);
+              html += `<tr>
+                <td><strong style="color:#1e7e34;">${e.normalized}</strong> <small style="color:#666;">(${e.raw_headword})</small></td>
+                <td><span style="background:#e6f4ea; color:#1e7e34; padding:2px 6px; border-radius:4px; font-weight:600;">Sayfa ${e.edpt_page || '—'}</span></td>
+              </tr>`;
+            });
+            html += `</tbody></table>`;
+          } else {
+            html += `<div style="margin-top:10px; color:#c0392b; font-weight:600;">❌ Sözlükte eşleşen bulunamadı</div>`;
+          }
+
+          // --- KATMAN 2: En olası tahmin (turuncu) ---
+          const bestGuess = w.best_guess_reading;
+          if (bestGuess) {
+            const isConfirmed = confirmed.some(e => e.normalized === bestGuess || e.raw_headword.replace(/:/g,'') === bestGuess);
+            if (!isConfirmed || confirmed.length === 0) {
+              html += `<div style="margin-top:10px; padding: 8px 12px; background:#fff8e1; border-left:4px solid #f39c12; border-radius:4px;">`;
+              html += `<strong style="color:#b8860b;">🟡 En Olası Okuma (doğrulanmadı):</strong> <span style="font-size:1.1rem; font-weight:600;">${bestGuess}</span>`;
+              html += `</div>`;
+            } else {
+              // Sözlükte de var - yeşil olarak göster
+              html += `<div style="margin-top:6px; padding: 6px 12px; background:#e6f4ea; border-left:4px solid #1e7e34; border-radius:4px;">`;
+              html += `<strong style="color:#1e7e34;">🟢 En Olası Okuma (sözlükte doğrulandu):</strong> <span style="font-size:1.1rem; font-weight:600;">${bestGuess}</span>`;
+              html += `</div>`;
+            }
+          }
+
+          // --- KATMAN 3: Diğer adaylar (gri, katlanmış) ---
+          const unmatched = w.unmatched_candidates || [];
+          if (unmatched.length > 0) {
+            const otherId = 'others_' + idx;
+            html += `<div style="margin-top:8px;">`;
+            html += `<button onclick="document.getElementById('${otherId}').style.display=document.getElementById('${otherId}').style.display==='none'?'block':'none'" 
+              style="background:none; border:1px solid #ccc; padding:3px 10px; border-radius:4px; cursor:pointer; font-size:0.82rem; color:#555;">
+              ▼ Diğer ${unmatched.length} adayı göster
+            </button>`;
+            html += `<div id="${otherId}" style="display:none; margin-top:6px; font-size:0.82rem; color:#888; padding:6px; background:#f9f9f9; border-radius:4px;">`;
+            html += unmatched.map(u => `<code style="margin-right:6px;">${u.candidate}</code>`).join(' ');
+            html += `</div></div>`;
+          }
+
+          if (w.dictionary_note) {
+            html += `<div style="font-size:0.8rem; color:#777; margin-top:8px; font-style:italic;">ℹ️ ${w.dictionary_note}</div>`;
+          }
+        }
+
+        html += `</div>`;
+      });
+
+      resultEl.innerHTML = html;
+    }
+
+    // --- Compositör Sekmesi (AI Görsel Üzerine Yerleştir) ---
+    let compFile = null;
+    let compImgObj = null;
+    let compBbox = [100, 100, 400, 150]; // x, y, w, h
+    let isDrawing = false;
+    let startX = 0, startY = 0;
+    
+    const compFileInput = document.getElementById('compFileInput');
+    const compUploadArea = document.getElementById('compUploadArea');
+    const compCanvas = document.getElementById('compCanvas');
+    const compCtx = compCanvas.getContext('2d');
+    const compBboxLabel = document.getElementById('compBboxLabel');
+    const compBtn = document.getElementById('compBtn');
+    const compResultArea = document.getElementById('compResultArea');
+    const compResultImg = document.getElementById('compResultImg');
+    const compDownloadBtn = document.getElementById('compDownloadBtn');
+
+    if (compUploadArea && compFileInput) {
+      compUploadArea.addEventListener('click', () => compFileInput.click());
+      compFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          compFile = e.target.files[0];
+          const url = URL.createObjectURL(compFile);
+          compImgObj = new Image();
+          compImgObj.onload = () => {
+            compCanvas.width = compImgObj.width;
+            compCanvas.height = compImgObj.height;
+            const w = Math.floor(compImgObj.width * 0.6);
+            const h = Math.floor(compImgObj.height * 0.2);
+            const x = Math.floor((compImgObj.width - w) / 2);
+            const y = Math.floor((compImgObj.height - h) / 2);
+            compBbox = [x, y, w, h];
+            drawCompCanvas();
+          };
+          compImgObj.src = url;
+        }
+      });
+
+      function drawCompCanvas() {
+        if (!compImgObj) return;
+        compCtx.clearRect(0, 0, compCanvas.width, compCanvas.height);
+        compCtx.drawImage(compImgObj, 0, 0);
+        
+        compCtx.fillStyle = 'rgba(255, 0, 0, 0.25)';
+        compCtx.fillRect(compBbox[0], compBbox[1], compBbox[2], compBbox[3]);
+        compCtx.strokeStyle = '#ff0000';
+        compCtx.lineWidth = Math.max(2, Math.floor(compCanvas.width / 300));
+        compCtx.strokeRect(compBbox[0], compBbox[1], compBbox[2], compBbox[3]);
+        
+        if (compBboxLabel) compBboxLabel.textContent = `${compBbox[0]}, ${compBbox[1]}, ${compBbox[2]}, ${compBbox[3]}`;
+      }
+
+      compCanvas.addEventListener('mousedown', (e) => {
+        if (!compImgObj) return;
+        const rect = compCanvas.getBoundingClientRect();
+        const scaleX = compCanvas.width / rect.width;
+        const scaleY = compCanvas.height / rect.height;
+        startX = Math.round((e.clientX - rect.left) * scaleX);
+        startY = Math.round((e.clientY - rect.top) * scaleY);
+        isDrawing = true;
+      });
+
+      compCanvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing || !compImgObj) return;
+        const rect = compCanvas.getBoundingClientRect();
+        const scaleX = compCanvas.width / rect.width;
+        const scaleY = compCanvas.height / rect.height;
+        const currX = Math.round((e.clientX - rect.left) * scaleX);
+        const currY = Math.round((e.clientY - rect.top) * scaleY);
+        
+        const x = Math.min(startX, currX);
+        const y = Math.min(startY, currY);
+        const w = Math.abs(currX - startX);
+        const h = Math.abs(currY - startY);
+        if (w > 5 && h > 5) {
+          compBbox = [x, y, w, h];
+          drawCompCanvas();
+        }
+      });
+
+      compCanvas.addEventListener('mouseup', () => { isDrawing = false; });
+      compCanvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+      compBtn.addEventListener('click', async () => {
+        if (!compFile) {
+          alert("Lütfen önce bir temel arka plan görseli yükleyin.");
+          return;
+        }
+        const text = document.getElementById('compTextInput').value.trim();
+        if (!text) {
+          alert("Lütfen Göktürkçe metin girin.");
+          return;
+        }
+        const style = document.getElementById('compStyleSelect').value;
+        const bboxStr = compBbox.join(',');
+        const autoColor = document.getElementById('compAutoColor').checked;
+        const textColor = document.getElementById('compTextColor').value;
+        const scale = document.getElementById('compScaleSlider').value;
+
+        loading.textContent = 'Görsel üzerine yerleştiriliyor (Compositör)...';
+        loading.style.display = 'block';
+        compResultArea.style.display = 'none';
+        compBtn.disabled = true;
+
+        try {
+          const formData = new FormData();
+          formData.append('base_image', compFile);
+          formData.append('text', text);
+          formData.append('bbox', bboxStr);
+          formData.append('style', style);
+          formData.append('auto_color_match', autoColor ? 'true' : 'false');
+          formData.append('text_color', textColor);
+          formData.append('scale', scale);
+
+          const res = await fetch('/api/composite', {
+            method: 'POST',
+            headers: { 'X-API-Key': 'internal-web-ui-key-998877' },
+            body: formData
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ detail: 'Sunucu hatası' }));
+            throw new Error(err.detail || 'İşlem başarısız');
+          }
+
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          compResultImg.src = url;
+          compDownloadBtn.href = url;
+          compResultArea.style.display = 'block';
+        } catch (err) {
+          alert("Hata: " + err.message);
+        } finally {
+          loading.style.display = 'none';
+          compBtn.disabled = false;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

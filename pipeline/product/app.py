@@ -27,6 +27,7 @@ from typing import List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
+import cv2
 from PIL import Image
 from torchvision import models, transforms
 
@@ -681,7 +682,18 @@ async def predict_image(request: Request, file: UploadFile = File(...), user: di
         raise HTTPException(status_code=400, detail="Geçersiz görsel dosyası")
 
     gray = np.array(img.convert("L"))
-    binary = gray < 128
+    
+    # Adaptif Eşikleme (Otsu) ve Polarite Kontrolü
+    # Görüntünün köşelerindeki pikselleri arkaplan kabul ediyoruz
+    thresh, _ = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    borders = np.concatenate([gray[0, :], gray[-1, :], gray[:, 0], gray[:, -1]])
+    bg_is_light = np.median(borders) > thresh
+    
+    if bg_is_light:
+        binary = gray < thresh  # Zemin aydınlık, yazı karanlık
+    else:
+        binary = gray > thresh  # Zemin karanlık, yazı aydınlık
+        
     lines = segment_mod.find_components_by_line(binary, merge_gap_px=segment_mod.DEFAULT_MERGE_GAP_PX, rtl=True)
 
     if not lines:
