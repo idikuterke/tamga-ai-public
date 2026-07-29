@@ -1,0 +1,66 @@
+# ============================================================
+# Render.com declarative config (Infrastructure as Code)
+# "Apply" butonuyla veya PR üzerinden otomatik deploy yapılabilir.
+# Repo kökünde olmalı: gokturk_public/render.yaml
+# ============================================================
+
+services:
+  - type: web
+    name: gokturk-api
+    runtime: python
+    plan: starter           # starter plan: 512MB RAM, 0.1 CPU. Ücretsiz için "free" kullanılabilir ama soğuk başlatma yavaş.
+    region: frankfurt        # Avrupa — kullanıcı kitlesine yakın
+    branch: main
+    rootDir: .              # repo kökü
+    buildCommand: |
+      python -m pip install --upgrade pip setuptools wheel &&
+      python -m pip install -r requirements.txt &&
+      # LFS objelerinin çekildiğinden emin ol (Render build pipeline'ı LFS'i otomatik çeker; yine de garanti edelim)
+      git lfs pull
+    startCommand: |
+      bash -c '
+        # Uygulama pipeline/product/app.py içinde — Render için gunicorn/uvicorn
+        # ile çalıştırıyoruz. PYTHONPATH güncellenir ki modüller bulunabilsin.
+        export PYTHONPATH="${PYTHONPATH}:${RENDER_PROJECT_DIR}/pipeline/product:${RENDER_PROJECT_DIR}/pipeline"
+        exec gunicorn app:app \
+          --chdir pipeline/product \
+          --workers 2 \
+          --worker-class uvicorn.workers.UvicornWorker \
+          --bind 0.0.0.0:$PORT \
+          --timeout 120 \
+          --access-logfile - \
+          --error-logfile -
+      '
+    healthCheckPath: /api/model_info    # model yüklendikten sonra 200 döner
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ENVIRONMENT
+        value: production
+      - key: RENDER_PROJECT_DIR
+        sync: false         # Render otomatik ayarlar
+      - key: SECRET_KEY
+        generateValue: true # Render otomatik rastgele değer üretir
+      - key: API_KEY_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gokturk-db
+          property: connectionString
+      - key: ALLOWED_ORIGINS
+        value: "https://gokturk-api.onrender.com"
+      - key: MAX_UPLOAD_MB
+        value: "10"
+      - key: LOG_USAGE
+        value: "true"
+
+databases:
+  - name: gokturk-db
+    plan: free              # Render free Postgres: 1GB, 90 gün ücretsiz
+    region: frankfurt
+    databaseName: gokturk
+    user: gokturk
+    ipAllowList: []         # sadece Render internal erişim (önerilen)

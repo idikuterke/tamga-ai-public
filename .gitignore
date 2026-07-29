@@ -1,0 +1,163 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+
+# ===== Virtual env =====
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Environment / Secrets (KRITIK) =====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.secret
+secrets/
+api_keys.json
+db.sqlite
+db.sqlite-journal
+db.sqlite-shm
+db.sqlite-wal
+
+# ===== Eğitim Pipeline Çıktıları (repo'ya girmesin) =====
+data/clean/
+data/augmented/
+data/dataset/
+data/negatives/
+checkpoints/
+checkpoints/*
+!checkpoints/.gitkeep
+model/checkpoints/latest.pt
+model/checkpoints/latest.pt.tmp
+model/checkpoints/latest_prev.pt
+model/checkpoints/train_log.txt
+model/checkpoints/DONE.txt
+# best.pt LFS ile takip edilecek (aşağıdaki .gitattributes'a bak)
+# best.pt dışındaki eğitim artefaktları ignore
+NIGHT_SUMMARY_REPORT.md
+run_night_pipeline.py
+
+# ===== Eğitim scriptleri (sadece inference yayınlanacak) =====
+pipeline/01_render_clean.py
+pipeline/02_augment.py
+pipeline/03_build_dataset.py
+pipeline/04_train_classifier.py
+pipeline/06_render_negatives.py
+pipeline/font_manifest.json
+pipeline/__pycache__/
+
+# ===== Test / Debug Çıktıları =====
+pipeline/product/test_*.png
+pipeline/product/test_*.mp4
+pipeline/product/verify_*.png
+pipeline/product/verify_*.mp4
+pipeline/product/dump_segments.py
+pipeline/product/test_*.py
+pipeline/product/verify_*.py
+pipeline/product/patch_*.py
+pipeline/product/generate_all_tests.py
+pipeline/product/usage_log.jsonl
+pipeline/product/mcp_server.py
+pipeline/product/MCP_KURULUM.md
+pipeline/product/dummy.png
+pipeline/product/glyph*.png
+pipeline/product/word*_g*.png
+pipeline/product/image*.jpg
+pipeline/product/*.png
+!pipeline/product/static/
+pipeline/product/static/uploads/
+pipeline/product/static/cache/
+
+# ===== Kullanıcı Verisi / Log =====
+*.log
+*.jsonl
+*.sqlite
+*.sqlite3
+*.db
+logs/
+runtime/
+instance/
+storage/
+
+# ===== Büyük binary (LFS dışı) =====
+*.pkl
+*.h5
+*.hdf5
+*.onnx
+*.pb
+*.tflite
+*.parquet
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+# .ttf fontlar LFS ile takip edilecek (gerekli olanlar)
+# ama texture'lar (büyük görsel) ignore edilecek
+pipeline/product/textures/
+!pipeline/product/textures/.gitkeep
+
+# ===== OS / Geçici =====
+*.tmp
+*.bak
+*.swp
+*.swo
+.cache/
+.Trash-*/
+
+# ===== Notebook / Reporting =====
+*.ipynb_checkpoints/
+.ipynb_checkpoints/
+profile_output/
+*.lprof
+
+# ===== Coverage / CI =====
+.coverage
+coverage.xml
+*.cover
+.jest-cache/
+
+# ===== Frontend / Node (ileride) =====
+node_modules/
+.next/
+.nuxt/
+out/
+dist/
+build/
+.parcel-cache/
+.turbo/
+
+# ===== Render.com =====
+.render/
+render-deploy.log
+
+# ===== LFS placeholder (track edilmemişse) =====
+*.pt.filter

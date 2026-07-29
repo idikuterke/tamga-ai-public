@@ -1,0 +1,16 @@
+# Git LFS — büyük binary dosyalar LFS ile takip edilir
+# Render.com, build sırasında LFS objelerini otomatik çeker (GitHub entegrasyonu aktifken).
+# Model checkpoint'leri (ana artifact)
+*.pt filter=lfs diff=lfs merge=lfs -text
+# Eğer best.pt yerine *.pt geneli LFS'e alınırsa, latest.pt ve latest_prev.pt
+# de LFS'e gider. latest.pt latest_prev.pt'yi .gitignore'a aldık; istenirse
+# best.pt'ye özel olarak genişletilebilir:
+# model/checkpoints/best.pt filter=lfs diff=lfs merge=lfs -text
+# Font dosyaları (gerekli olanlar inference için kullanılıyor)
+*.ttf filter=lfs diff=lfs merge=lfs -text
+*.otf filter=lfs diff=lfs merge=lfs -text
+*.woff filter=lfs diff=lfs merge=lfs -text
+*.woff2 filter=lfs diff=lfs merge=lfs -text
+# Diğer potansiyel büyük binary assetler
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text

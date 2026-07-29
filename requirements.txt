@@ -1,0 +1,49 @@
+# ============================================================
+# Göktürkçe Doğrulama Aracı - Runtime bağımlılıkları
+# Python 3.11.x — render.yaml'da belirtilmiştir.
+# Render.com üzerinde çalışacak inference web app için gerekenler.
+# ============================================================
+
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+gunicorn==23.0.0
+python-multipart==0.0.19
+
+# --- Validation ---
+pydantic>=2.10.3
+
+# --- Async Files ---
+aiofiles>=23.2.1
+
+# --- Security / JWT ---
+python-jose[cryptography]>=3.3.0
+
+# --- Rate limiting ---
+slowapi==0.1.9
+
+# --- Veritabanı (PostgreSQL) ---
+# SQLAlchemy 2.x async; psycopg2 driver
+SQLAlchemy>=2.0
+psycopg2-binary>=2.9
+alembic==1.14.0
+
+# --- ML / Görüntü işleme ---
+# PyTorch CPU-only binary kullanıyoruz (Render free tier GPU yok; CUDA binary ~2GB
+# ve free tier RAM'inde OOM yapar). torch + torchvision'u PyTorch'un kendi CPU
+# index'inden çekmek için en üstteki --extra-index-url satırı kullanılıyor.
+# Diğer tüm paketler normal PyPI'den gelir.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.5.1
+torchvision==0.20.1
+numpy==2.2.0
+Pillow==11.0.0
+scipy==1.14.1
+
+# --- Font araçları (render için) ---
+fonttools==4.55.6
+
+# --- HTTP / Logging (built-in dışında) ---
+httpx==0.28.1
+python-json-logger==2.0.7

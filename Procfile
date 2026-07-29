@@ -1,0 +1,1 @@
+web: bash -c "export PYTHONPATH=\"${PYTHONPATH}:${RENDER_PROJECT_DIR}/pipeline/product:${RENDER_PROJECT_DIR}/pipeline\" && exec gunicorn app:app --chdir pipeline/product --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120 --access-logfile - --error-logfile -"
