@@ -425,7 +425,7 @@ class ModelBundle:
         self.class_meta = {c["id"]: c for c in schema["classes"]}
 
         model_file = (MODEL_DIR / "checkpoints" / "best.pt").resolve()
-        mtime_str = datetime.fromtimestamp(model_file.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+        mtime_str = datetime.datetime.fromtimestamp(model_file.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
         file_size_mb = model_file.stat().st_size / (1024 * 1024)
 
         self.model = build_model(self.cfg["num_classes"])
@@ -513,13 +513,9 @@ def load_model():
         sys.stderr.write(f"Şema yüklenemedi: {e}\n")
         class_meta_map = {}
 
-    try:
-        bundle = ModelBundle()
-        sys.stderr.write(f"Model Yüklendi: {bundle.model_info['model_path']}\n")
-    except Exception as e:
-        sys.stderr.write(f"Model Yüklenemedi (render-only modunda olabilir): {e}\n")
-        bundle = None
-        
+    bundle = ModelBundle()
+    sys.stderr.write(f"Model Yüklendi: {bundle.model_info['model_path']}\n")
+
     rule_engine = OrthographyRuleEngine(SCHEMA_PATH)
     spelling_engine = SpellingEngine(SCHEMA_PATH)
     spelling_decoder = SpellingDecoder(SCHEMA_PATH)
@@ -695,6 +691,17 @@ async def predict_image(request: Request, file: UploadFile = File(...), user: di
         binary = gray > thresh  # Zemin karanlık, yazı aydınlık
         
     lines = segment_mod.find_components_by_line(binary, merge_gap_px=segment_mod.DEFAULT_MERGE_GAP_PX, rtl=True)
+
+    # Gürültü filtresi: en büyük kutunun alanının %5'inden küçük kutular
+    # (sabit piksel değil, oransal) segmentasyon çıktısından elenir.
+    all_areas = [(b[2] - b[0]) * (b[3] - b[1]) for line in lines for b in line]
+    if all_areas:
+        min_area = max(all_areas) * 0.05
+        lines = [
+            [b for b in line if (b[2] - b[0]) * (b[3] - b[1]) >= min_area]
+            for line in lines
+        ]
+        lines = [line for line in lines if line]
 
     if not lines:
         return {

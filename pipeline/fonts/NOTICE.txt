@@ -1,0 +1,8 @@
+Bu dizindeki tum fontlar SIL Open Font License 1.1 (bkz. OFL.txt) altinda lisanslidir.
+
+Gokturk-Regular.ttf, Gokturk-Bold.ttf, Gokturk-Light.ttf, Gokturk-Oblique.ttf, Gokturk-Condensed.ttf
+  Copyright 2022 The Noto Project Authors (https://github.com/notofonts/old-turkic)
+
+Gokturk-Orkun-Regular.ttf, Gokturk-Orkun-Bold.ttf, Gokturk-Orkun-Light.ttf, Gokturk-Orkun-Oblique.ttf, Gokturk-Orkun-Condensed.ttf
+  Copyright (c) 2013 by Emir Sari. All rights reserved.
+  Designer: Emir Sari, Erk Yurtsever
