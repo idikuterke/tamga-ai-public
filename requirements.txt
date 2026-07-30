@@ -12,6 +12,7 @@ python-multipart==0.0.19
 
 # --- Validation ---
 pydantic>=2.10.3
+email-validator>=2.1.0
 
 # --- Async Files ---
 aiofiles>=23.2.1
@@ -35,11 +36,14 @@ alembic==1.14.0
 # Diğer tüm paketler normal PyPI'den gelir.
 --extra-index-url https://download.pytorch.org/whl/cpu
 
-torch==2.5.1
-torchvision==0.20.1
+torch==2.6.0
+torchvision==0.21.0
 numpy==2.2.0
 Pillow==11.0.0
 scipy==1.14.1
+transformers>=4.45.0
+imageio>=2.35.0
+imageio-ffmpeg>=0.5.1
 
 # --- Font araçları (render için) ---
 fonttools==4.55.6
