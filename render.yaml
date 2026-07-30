@@ -22,6 +22,10 @@ services:
         # Uygulama pipeline/product/app.py içinde — Render için gunicorn/uvicorn
         # ile çalıştırıyoruz. PYTHONPATH güncellenir ki modüller bulunabilsin.
         export PYTHONPATH="${PYTHONPATH}:${RENDER_PROJECT_DIR}/pipeline/product:${RENDER_PROJECT_DIR}/pipeline"
+        # Şema migration'ları -- app'in kendi create_all() fallback'i var
+        # ama usage_log/feedback gibi yeni tablolar artık alembic'in
+        # sorumluluğunda. Gunicorn'dan ÖNCE, her deploy'da çalışır.
+        python -m alembic upgrade head &&
         exec gunicorn app:app \
           --chdir pipeline/product \
           --workers 1 \

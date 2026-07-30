@@ -16,6 +16,7 @@ Sonra tarayıcıda: http://localhost:8000  (veya Render domain)
 """
 
 import datetime
+import hmac
 import io
 import json
 import logging
@@ -49,11 +50,13 @@ from pydantic import BaseModel, EmailStr, Field
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from sqlalchemy import select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from auth import (
+    Feedback,
     Interest,
+    UsageLog,
     User,
     generate_unique_key,
     get_connection,
@@ -66,6 +69,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
     invite_code: Optional[str] = Field(default=None, max_length=16)
+    consent: bool = Field(..., description="KVKK/veri saklama onayı zorunlu")
 
 
 class LoginRequest(BaseModel):
@@ -102,6 +106,7 @@ STATIC_DIR = PRODUCT_DIR / "static"
 
 API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+ADMIN_API_KEY_ENV = os.environ.get("ADMIN_API_KEY", "")
 
 RATE_LIMIT_MINUTE = 30
 RATE_LIMIT_DAY = 1000
@@ -279,6 +284,34 @@ def _user_to_dict(user: User) -> dict:
     }
 
 
+def get_admin(api_key: str = Security(api_key_header)) -> bool:
+    if not ADMIN_API_KEY_ENV or not api_key or not hmac.compare_digest(api_key, ADMIN_API_KEY_ENV):
+        raise HTTPException(status_code=401, detail="Invalid Admin API Key")
+    return True
+
+
+def _log_usage(
+    user_id: int,
+    endpoint: str,
+    input_text: Optional[str],
+    result_text: Optional[str],
+    confidence: Optional[float],
+) -> int:
+    """usage_log satırı yazar, admin/istatistik ve geri bildirim (feedback) FK'si için id döner."""
+    with get_connection() as conn:
+        row = UsageLog(
+            user_id=user_id,
+            endpoint=endpoint,
+            input_text=input_text,
+            result_text=result_text,
+            confidence=confidence,
+        )
+        conn.add(row)
+        conn.flush()
+        usage_log_id = row.id
+    return usage_log_id
+
+
 @app.middleware("http")
 async def log_usage_middleware(request: Request, call_next):
     """
@@ -341,6 +374,11 @@ app.add_middleware(
 @limiter.limit(f"{RATE_LIMIT_LOGIN_MINUTE}/minute")
 def register(request: Request, req: RegisterRequest):
     """Yeni kullanıcı kaydı. Aynı e-posta ile ikinci kayıt reddedilir."""
+    if not req.consent:
+        raise HTTPException(
+            status_code=400,
+            detail="Devam etmek için veri saklama onay kutusunu işaretlemelisiniz",
+        )
     try:
         with get_connection() as conn:
             existing = conn.execute(
@@ -775,11 +813,17 @@ async def predict_image(request: Request, file: UploadFile = File(...), user: di
             "dictionary_note": decoder_res.get("dictionary_note", ""),
         })
 
+    all_confidences = [g["confidence"] for w in words_raw for g in w]
+    avg_confidence = (sum(all_confidences) / len(all_confidences)) if all_confidences else None
+    result_text = " | ".join("-".join(g["verdict"] for g in w) for w in words_raw) if words_raw else None
+    usage_log_id = _log_usage(user["id"], "predict_image", file.filename, result_text, avg_confidence)
+
     return {
         "reading_order": "rtl",
         "words": words_out,
         "word_count": len(words_out),
         "overall_valid": (len(words_out) > 0) and (not any_word_invalid),
+        "usage_log_id": usage_log_id,
         "segmentation_debug": {
             "total_lines": len(lines),
             "total_boxes": total_boxes,
@@ -870,10 +914,117 @@ async def api_render(request: Request, req: RenderRequest, user: dict = Depends(
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='PNG')
         img_byte_arr = img_byte_arr.getvalue()
-        
-        return Response(content=img_byte_arr, media_type="image/png")
+
+        usage_log_id = _log_usage(user["id"], "render", req.text, None, None)
+
+        return Response(
+            content=img_byte_arr,
+            media_type="image/png",
+            headers={"X-Usage-Log-Id": str(usage_log_id)},
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class FeedbackRequest(BaseModel):
+    usage_log_id: int
+    rating: int = Field(..., ge=-1, le=1)
+    comment: Optional[str] = Field(default=None, max_length=500)
+
+
+@app.post("/api/feedback")
+@limiter.limit(f"{RATE_LIMIT_MINUTE}/minute; {RATE_LIMIT_DAY}/day")
+def api_feedback(request: Request, req: FeedbackRequest, user: dict = Depends(get_current_user)):
+    if req.rating not in (1, -1):
+        raise HTTPException(status_code=400, detail="rating +1 veya -1 olmalı")
+    with get_connection() as conn:
+        log_row = conn.execute(
+            select(UsageLog).where(UsageLog.id == req.usage_log_id, UsageLog.user_id == user["id"])
+        ).scalar_one_or_none()
+        if not log_row:
+            raise HTTPException(status_code=404, detail="Usage log bulunamadı")
+        existing = conn.execute(
+            select(Feedback).where(Feedback.usage_log_id == req.usage_log_id)
+        ).scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=400, detail="Bu sonuç için zaten geri bildirim verildi")
+        conn.add(Feedback(usage_log_id=req.usage_log_id, rating=req.rating, comment=req.comment))
+    return {"message": "Geri bildirim kaydedildi"}
+
+
+@app.delete("/api/account")
+def delete_account(user: dict = Depends(get_current_user)):
+    """KVKK silme hakkı: kullanıcının kendi kaydını + ilişkili usage_log/feedback verisini siler."""
+    with get_connection() as conn:
+        log_ids = [r[0] for r in conn.execute(
+            select(UsageLog.id).where(UsageLog.user_id == user["id"])
+        ).all()]
+        if log_ids:
+            conn.execute(delete(Feedback).where(Feedback.usage_log_id.in_(log_ids)))
+            conn.execute(delete(UsageLog).where(UsageLog.user_id == user["id"]))
+        conn.execute(delete(User).where(User.id == user["id"]))
+    return {"message": "Hesap ve ilişkili veriler silindi"}
+
+
+class AdminCreditsRequest(BaseModel):
+    email: EmailStr
+    credits: int = Field(..., gt=0, le=1000)
+
+
+@app.get("/api/admin/stats")
+def admin_stats(_: bool = Depends(get_admin)):
+    with get_connection() as conn:
+        total_usage = conn.execute(select(func.count()).select_from(UsageLog)).scalar_one()
+        avg_conf = conn.execute(select(func.avg(UsageLog.confidence))).scalar_one()
+        top_texts = conn.execute(
+            select(UsageLog.input_text, func.count().label("cnt"))
+            .where(UsageLog.input_text.is_not(None))
+            .group_by(UsageLog.input_text)
+            .order_by(func.count().desc())
+            .limit(20)
+        ).all()
+        up = conn.execute(
+            select(func.count()).select_from(Feedback).where(Feedback.rating == 1)
+        ).scalar_one()
+        down = conn.execute(
+            select(func.count()).select_from(Feedback).where(Feedback.rating == -1)
+        ).scalar_one()
+    return {
+        "total_usage": total_usage,
+        "avg_confidence": round(avg_conf, 4) if avg_conf is not None else None,
+        "top_20_texts": [{"text": t, "count": c} for t, c in top_texts],
+        "feedback_up": up,
+        "feedback_down": down,
+    }
+
+
+@app.post("/api/admin/credits")
+def admin_add_credits(req: AdminCreditsRequest, _: bool = Depends(get_admin)):
+    with get_connection() as conn:
+        result = conn.execute(
+            update(User)
+            .where(User.email == req.email)
+            .values(verification_credits=User.verification_credits + req.credits)
+        )
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    return {"message": f"{req.credits} kredi eklendi"}
+
+
+@app.delete("/api/admin/user")
+def admin_delete_user(email: EmailStr, _: bool = Depends(get_admin)):
+    with get_connection() as conn:
+        target = conn.execute(select(User).where(User.email == email)).scalar_one_or_none()
+        if not target:
+            raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+        log_ids = [r[0] for r in conn.execute(
+            select(UsageLog.id).where(UsageLog.user_id == target.id)
+        ).all()]
+        if log_ids:
+            conn.execute(delete(Feedback).where(Feedback.usage_log_id.in_(log_ids)))
+            conn.execute(delete(UsageLog).where(UsageLog.user_id == target.id))
+        conn.execute(delete(User).where(User.id == target.id))
+    return {"message": "Kullanıcı silindi"}
 
 
 @app.get("/api/config")
@@ -960,8 +1111,19 @@ def get_privacy():
     <html><head><meta charset="utf-8"><title>Gizlilik Politikası</title></head><body>
     <h1>Gizlilik Politikası (Taslak)</h1>
     <p><strong>NOT:</strong> Bu sayfa taslak niteliğindedir ve yayından önce bir avukat tarafından gözden geçirilmelidir.</p>
-    <p>1. Toplanan veriler: E-posta adresi, yüklenen görseller, API kullanım logları.</p>
-    <p>2. Yüklenen görseller, model iyileştirilmesi amacıyla (anonimleştirilerek) kullanılabilir.</p>
+    <h2>Hangi veri</h2>
+    <p>E-posta adresi ve parola (hash'lenmiş hali) hesap oluştururken; girdiğiniz metinler, yüklediğiniz görseller ve
+    bunların model tahmin sonuçları (güven skoru dahil) her sorgu yaptığınızda; verdiğiniz 👍/👎 geri bildirimler ve
+    yorumlar (varsa).</p>
+    <h2>Ne amaçla</h2>
+    <p>Hesabınızı çalıştırmak (kredi/kota takibi), model doğruluğunu ve segmentasyon kalitesini analiz edip
+    iyileştirmek, kötüye kullanımı önlemek için kullanım kayıtları (rate limit).</p>
+    <h2>Ne kadar süre</h2>
+    <p>Hesabınız açık olduğu sürece saklanır. Kullanım kayıtları (usage_log) ve geri bildirimler hesabınıza bağlıdır;
+    hesabınızı sildiğinizde bunlarla birlikte silinir.</p>
+    <h2>Silme hakkı</h2>
+    <p>Hesap panelinden "Hesabı Sil" ile ya da doğrudan <code>DELETE /api/account</code> isteğiyle hesabınızı ve
+    ilişkili tüm kullanım/geri bildirim kayıtlarınızı kalıcı olarak silebilirsiniz.</p>
     <p>3. Üçüncü şahıslarla reklam amacıyla veri paylaşılmaz.</p>
     </body></html>
     """

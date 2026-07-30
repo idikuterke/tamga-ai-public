@@ -67,12 +67,48 @@
 <body>
   <h1>Göktürkçe (Orhun) Glyph Doğrulama</h1>
 
+  <div id="authLoggedOut" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; background:#f9f9f9; border:1px solid #e0e0e0; border-radius:10px; padding:16px; margin-bottom:16px;">
+    <form id="registerForm" style="display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1;">
+      <strong>Kayıt Ol</strong>
+      <input type="email" id="regEmail" placeholder="E-posta" required style="padding:6px 8px; border-radius:6px; border:1px solid #ccc;">
+      <input type="password" id="regPassword" placeholder="Parola (en az 8 karakter)" required minlength="8" style="padding:6px 8px; border-radius:6px; border:1px solid #ccc;">
+      <label style="display:flex; gap:6px; align-items:flex-start; font-size:.78rem; color:#555; cursor:pointer;">
+        <input type="checkbox" id="regConsent" required style="margin-top:3px;">
+        <span>Girdiğim metinlerin hizmet iyileştirme amacıyla saklanmasını kabul ediyorum. <a href="/privacy" target="_blank" rel="noopener">Gizlilik Politikası</a></span>
+      </label>
+      <button type="submit" style="padding:6px 14px; border-radius:6px; border:none; background:#1a1a1a; color:white; cursor:pointer;">Kayıt Ol</button>
+      <div id="registerMsg" style="font-size:.8rem;"></div>
+    </form>
+    <form id="loginForm" style="display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1;">
+      <strong>Giriş Yap</strong>
+      <input type="email" id="loginEmail" placeholder="E-posta" required style="padding:6px 8px; border-radius:6px; border:1px solid #ccc;">
+      <input type="password" id="loginPassword" placeholder="Parola" required style="padding:6px 8px; border-radius:6px; border:1px solid #ccc;">
+      <button type="submit" style="padding:6px 14px; border-radius:6px; border:none; background:#1a1a1a; color:white; cursor:pointer;">Giriş Yap</button>
+      <div id="loginMsg" style="font-size:.8rem;"></div>
+    </form>
+  </div>
+
+  <div id="authLoggedIn" style="display:none; align-items:center; gap:16px; flex-wrap:wrap; background:#f2f7f2; border:1px solid #cde5cd; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:.85rem;">
+    <span>Kalan kredi: <strong id="accCredits">-</strong></span>
+    <span>API Key: <code id="accApiKey" style="user-select:all;">••••••••</code>
+      <button id="toggleApiKeyBtn" type="button" style="padding:2px 8px; border-radius:4px; border:1px solid #ccc; background:white; cursor:pointer; font-size:.75rem;">Göster</button>
+      <button id="copyApiKeyBtn" type="button" style="padding:2px 8px; border-radius:4px; border:1px solid #ccc; background:white; cursor:pointer; font-size:.75rem;">Kopyala</button>
+    </span>
+    <button id="logoutBtn" type="button" style="margin-left:auto; padding:5px 12px; border-radius:6px; border:1px solid #ccc; background:white; cursor:pointer; font-size:.8rem;">Çıkış</button>
+    <button id="deleteAccountBtn" type="button" style="padding:5px 12px; border-radius:6px; border:none; background:#c0392b; color:white; cursor:pointer; font-size:.8rem;">Hesabı Sil</button>
+  </div>
+
+  <div id="toolLocked" style="display:none; padding:48px 20px; text-align:center; color:#777; background:#f9f9f9; border-radius:10px; margin-top:8px;">
+    Aracı kullanmak için yukarıdan <strong>giriş yapın</strong> ya da hesap oluşturun.
+  </div>
+
+  <div id="toolArea">
   <div class="tabs">
     <div class="tab active" id="tabImage">Görsel Yükle (kelime/cümle)</div>
     <div class="tab" id="tabSingle">Tek Glyph Testi</div>
     <div class="tab" id="tabTranslate">Çevirici (Latin→Göktürkçe)</div>
     <div class="tab" id="tabDecode">Deşifre (Göktürkçe→Latin)</div>
-    <div class="tab" id="tabRender">Görsel/Video Üret</div>
+    <div class="tab" id="tabRender">Görsel Üret</div>
     <div class="tab" id="tabComposite" style="display:none;">Compositör (AI Görsel)</div>
   </div>
 
@@ -231,6 +267,7 @@
       <div style="margin-top: 12px;">
         <a id="renderDownloadBtn" download="gokturkce_render.png" style="display: inline-block; padding: 8px 16px; background: #1a1a1a; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem;">PNG İndir</a>
       </div>
+      <div id="renderFeedback" style="text-align:left;"></div>
     </div>
   </div>
 
@@ -308,8 +345,199 @@
 
   <p id="loading">Değerlendiriliyor…</p>
   <div id="result"></div>
+  </div>
 
   <script>
+    // ===================== Auth (localStorage tabanlı) =====================
+    const AUTH_KEY = 'gokturk_api_key';
+    function getApiKey() { return localStorage.getItem(AUTH_KEY) || ''; }
+    function setApiKey(key) { localStorage.setItem(AUTH_KEY, key); }
+    function clearApiKey() { localStorage.removeItem(AUTH_KEY); }
+    function apiHeaders(extra) { return Object.assign({ 'X-API-Key': getApiKey() }, extra || {}); }
+
+    const authLoggedOut = document.getElementById('authLoggedOut');
+    const authLoggedIn = document.getElementById('authLoggedIn');
+    const toolLocked = document.getElementById('toolLocked');
+    const toolArea = document.getElementById('toolArea');
+    const registerForm = document.getElementById('registerForm');
+    const loginForm = document.getElementById('loginForm');
+    const registerMsg = document.getElementById('registerMsg');
+    const loginMsg = document.getElementById('loginMsg');
+    const accCredits = document.getElementById('accCredits');
+    const accApiKey = document.getElementById('accApiKey');
+    const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+    const copyApiKeyBtn = document.getElementById('copyApiKeyBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+
+    let apiKeyRevealed = false;
+
+    function renderAuthUI(loggedIn, userInfo) {
+      authLoggedOut.style.display = loggedIn ? 'none' : 'flex';
+      authLoggedIn.style.display = loggedIn ? 'flex' : 'none';
+      toolArea.style.display = loggedIn ? 'block' : 'none';
+      toolLocked.style.display = loggedIn ? 'none' : 'block';
+      if (loggedIn && userInfo) {
+        accCredits.textContent = userInfo.verification_credits;
+        apiKeyRevealed = false;
+        accApiKey.textContent = '••••••••';
+        toggleApiKeyBtn.textContent = 'Göster';
+      }
+    }
+
+    async function refreshAccount() {
+      const key = getApiKey();
+      if (!key) { renderAuthUI(false); return; }
+      try {
+        const res = await fetch('/me', { headers: apiHeaders() });
+        if (!res.ok) { clearApiKey(); renderAuthUI(false); return; }
+        const data = await res.json();
+        renderAuthUI(true, data);
+      } catch (e) {
+        renderAuthUI(false);
+      }
+    }
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      registerMsg.textContent = '';
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const consent = document.getElementById('regConsent').checked;
+      if (!consent) {
+        registerMsg.style.color = '#c0392b';
+        registerMsg.textContent = 'Devam etmek için onay kutusunu işaretleyin.';
+        return;
+      }
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, consent })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Kayıt başarısız');
+        setApiKey(data.api_key);
+        registerForm.reset();
+        await refreshAccount();
+      } catch (err) {
+        registerMsg.style.color = '#c0392b';
+        registerMsg.textContent = 'Hata: ' + (err.message || err);
+      }
+    });
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginMsg.textContent = '';
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Giriş başarısız');
+        setApiKey(data.api_key);
+        loginForm.reset();
+        await refreshAccount();
+      } catch (err) {
+        loginMsg.style.color = '#c0392b';
+        loginMsg.textContent = 'Hata: ' + (err.message || err);
+      }
+    });
+
+    toggleApiKeyBtn.addEventListener('click', () => {
+      apiKeyRevealed = !apiKeyRevealed;
+      accApiKey.textContent = apiKeyRevealed ? getApiKey() : '••••••••';
+      toggleApiKeyBtn.textContent = apiKeyRevealed ? 'Gizle' : 'Göster';
+    });
+
+    copyApiKeyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(getApiKey());
+        copyApiKeyBtn.textContent = 'Kopyalandı';
+        setTimeout(() => copyApiKeyBtn.textContent = 'Kopyala', 1500);
+      } catch (e) { /* clipboard erişimi yoksa sessizce geç */ }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      clearApiKey();
+      renderAuthUI(false);
+    });
+
+    deleteAccountBtn.addEventListener('click', async () => {
+      if (!confirm('Hesabınızı ve ilişkili tüm verilerinizi kalıcı olarak silmek istediğinize emin misiniz?')) return;
+      try {
+        const res = await fetch('/api/account', { method: 'DELETE', headers: apiHeaders() });
+        if (!res.ok) throw new Error('Silme başarısız');
+        clearApiKey();
+        renderAuthUI(false);
+      } catch (err) {
+        alert('Hata: ' + (err.message || err));
+      }
+    });
+
+    // ===================== Geri bildirim (👍/👎) =====================
+    function feedbackWidgetHtml(usageLogId) {
+      if (!usageLogId) return '';
+      return `
+        <div class="feedback-widget" data-usage-log-id="${usageLogId}" style="margin-top:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="fbBtn" data-rating="1" style="padding:4px 10px; border-radius:6px; border:1px solid #ccc; background:white; cursor:pointer;">👍</button>
+          <button class="fbBtn" data-rating="-1" style="padding:4px 10px; border-radius:6px; border:1px solid #ccc; background:white; cursor:pointer;">👎</button>
+          <input type="text" class="fbComment" maxlength="200" placeholder="Yorum (opsiyonel)" style="flex:1; min-width:140px; padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:.8rem;">
+          <span class="fbMsg" style="font-size:.75rem;"></span>
+        </div>
+      `;
+    }
+
+    document.body.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.fbBtn');
+      if (!btn) return;
+      const widget = btn.closest('.feedback-widget');
+      if (!widget || widget.dataset.done === '1') return;
+      const usageLogId = parseInt(widget.dataset.usageLogId, 10);
+      const rating = parseInt(btn.dataset.rating, 10);
+      const commentEl = widget.querySelector('.fbComment');
+      const msgEl = widget.querySelector('.fbMsg');
+      try {
+        const res = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: apiHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ usage_log_id: usageLogId, rating, comment: commentEl.value.trim() || null })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Geri bildirim gönderilemedi');
+        widget.dataset.done = '1';
+        widget.querySelectorAll('.fbBtn').forEach(b => b.disabled = true);
+        commentEl.disabled = true;
+        msgEl.style.color = '#1e7e34';
+        msgEl.textContent = 'Teşekkürler!';
+      } catch (err) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Hata: ' + (err.message || err);
+      }
+    });
+    // ===================== /Geri bildirim =====================
+
+    // Herhangi bir uçtan 401 (geçersiz/süresi dolmuş API key) dönerse
+    // ham "Invalid API Key" hatasını göstermek yerine sessizce çıkış
+    // yaptırıp kilitli görünüme dön -- toolArea gizlenince altındaki
+    // hata metni de görünmez olur.
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = async function (...args) {
+      const res = await _origFetch(...args);
+      if (res.status === 401 && getApiKey()) {
+        clearApiKey();
+        renderAuthUI(false);
+      }
+      return res;
+    };
+
+    refreshAccount();
+    // ===================== /Auth =====================
+
     const drop = document.getElementById('drop');
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('preview');
@@ -369,6 +597,7 @@
     const renderResult = document.getElementById('renderResult');
     const renderPreview = document.getElementById('renderPreview');
     const renderDownloadBtn = document.getElementById('renderDownloadBtn');
+    const renderFeedback = document.getElementById('renderFeedback');
 
     let isBold = false;
     let isItalic = false;
@@ -601,10 +830,7 @@
       try {
         const res = await fetch('/api/render', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': 'internal-web-ui-key-998877'
-          },
+          headers: apiHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         
@@ -627,8 +853,10 @@
         renderDownloadBtn.textContent = 'PNG İndir';
 
         renderDownloadBtn.href = url;
+        const usageLogId = parseInt(res.headers.get('X-Usage-Log-Id'), 10);
+        renderFeedback.innerHTML = feedbackWidgetHtml(usageLogId);
         renderResult.style.display = 'block';
-        
+
       } catch (err) {
         resultEl.innerHTML = `<p style="color:#c0392b; background:#fde8e8; padding:12px; border-radius:8px; border:1px solid #f8b4b4; margin-top:12px;">Hata: ${err.message || err}</p>`;
       } finally {
@@ -652,10 +880,7 @@
       try {
         const res = await fetch('/translate', {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-API-Key': 'internal-web-ui-key-998877'
-          },
+          headers: apiHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ text, mode: translateMode.value }),
         });
         const data = await res.json();
@@ -897,11 +1122,9 @@
       const endpoint = mode === 'image' ? '/predict_image' : '/predict';
 
       try {
-        const res = await fetch(endpoint, { 
-          method: 'POST', 
-          headers: {
-            'X-API-Key': 'internal-web-ui-key-998877'
-          },
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: apiHeaders(),
           body: formData 
         });
         const data = await res.json();
@@ -983,6 +1206,7 @@
         `;
       });
 
+      html += feedbackWidgetHtml(data.usage_log_id);
       resultEl.innerHTML = html;
     }
 
@@ -997,10 +1221,7 @@
       try {
         const res = await fetch('/decode_text', {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-API-Key': 'internal-web-ui-key-998877'
-          },
+          headers: apiHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ text, mode }),
         });
         const data = await res.json();
@@ -1212,7 +1433,7 @@
 
           const res = await fetch('/api/composite', {
             method: 'POST',
-            headers: { 'X-API-Key': 'internal-web-ui-key-998877' },
+            headers: apiHeaders(),
             body: formData
           });
 

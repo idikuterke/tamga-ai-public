@@ -11,7 +11,7 @@ import uuid
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine, func
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, create_engine, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
@@ -57,6 +57,24 @@ class Interest(Base):
     email = Column(String(254), nullable=False)
     package = Column(String(64), nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class UsageLog(Base):
+    __tablename__ = "usage_log"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    endpoint = Column(String(64), nullable=False)
+    input_text = Column(Text, nullable=True)
+    result_text = Column(Text, nullable=True)
+    confidence = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usage_log_id = Column(Integer, ForeignKey("usage_log.id"), nullable=False, index=True)
+    rating = Column(Integer, nullable=False)  # +1 / -1
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 # ---------------------------------------------------------------------------
 # Güvenlik ve Yardımcı Fonksiyonlar
