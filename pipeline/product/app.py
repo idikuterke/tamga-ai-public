@@ -175,7 +175,7 @@ app.state.limiter = limiter
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     return JSONResponse(
         status_code=429,
-        content={"detail": f"Rate limit exceeded: {exc.detail}. Dakikada en fazla {RATE_LIMIT_MINUTE} istek, günde en fazla {RATE_LIMIT_DAY} istek atılabilir."}
+        content={"detail": f"Çok fazla istek attınız (limit: {exc.detail}). Lütfen bir süre sonra tekrar deneyin."}
     )
 
 
@@ -232,7 +232,7 @@ def verify_and_deduct_quota(user: dict = Depends(get_current_user)):
     if user["verification_credits"] <= 0:
         raise HTTPException(
             status_code=402,
-            detail="kredi kalmadı, davet linkiyle kazanabilirsin",
+            detail="3 ücretsiz görsel doğrulama hakkınızı kullandınız. Render ve deşifre hâlâ ücretsizdir, ek doğrulama hakkı için davet linkiyle kazanabilir ya da yükseltebilirsiniz.",
         )
 
     with get_connection() as conn:
@@ -615,7 +615,7 @@ async def decode_text(request: Request, req: DecodeTextRequest, api_key: str = D
 
 @app.post("/predict")
 @limiter.limit(f"{RATE_LIMIT_MINUTE}/minute; {RATE_LIMIT_DAY}/day")
-async def predict(request: Request, file: UploadFile = File(...), user: dict = Depends(verify_and_deduct_quota)):
+async def predict(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     if bundle is None:
         raise HTTPException(status_code=503, detail="Model henüz yüklenmedi")
     contents = await _read_with_limit(file, MAX_UPLOAD_BYTES)
@@ -631,7 +631,7 @@ async def predict(request: Request, file: UploadFile = File(...), user: dict = D
 
 @app.post("/predict_word")
 @limiter.limit(f"{RATE_LIMIT_MINUTE}/minute; {RATE_LIMIT_DAY}/day")
-async def predict_word(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(verify_and_deduct_quota)):
+async def predict_word(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
     """
     Birden fazla görsel, OKUMA SIRASINA GÖRE (soldan sağa mantıksal sırada,
     yani zaten doğru diziliş) yüklenir — her biri bir kelimenin bir harfi.
@@ -1024,7 +1024,11 @@ def admin_delete_user(email: EmailStr, _: bool = Depends(get_admin)):
 
 @app.get("/api/config")
 def get_config():
-    return {"enable_compositor_tab": ENABLE_COMPOSITOR_TAB}
+    return {
+        "enable_compositor_tab": ENABLE_COMPOSITOR_TAB,
+        "rate_limit_minute": RATE_LIMIT_MINUTE,
+        "rate_limit_day": RATE_LIMIT_DAY,
+    }
 
 
 @app.post("/api/composite")

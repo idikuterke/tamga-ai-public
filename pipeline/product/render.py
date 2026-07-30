@@ -234,6 +234,32 @@ def create_background(size: int | tuple[int, int], style_cfg: dict, background_c
         
     return img
 
+WATERMARK_TEXT = "tamga-ai-public.onrender.com"
+
+
+def _apply_watermark(img: Image.Image, canvas_w: int, canvas_h: int) -> Image.Image:
+    """Sağ altta, görsel boyutuyla orantılı (sabit piksel değil), yarı saydam filigran."""
+    font_size = max(10, int(min(canvas_w, canvas_h) * 0.028))
+    try:
+        font = ImageFont.load_default(size=font_size)
+    except TypeError:
+        font = ImageFont.load_default()
+
+    layer = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    margin = int(min(canvas_w, canvas_h) * 0.025)
+    x = canvas_w - tw - margin - bbox[0]
+    y = canvas_h - th - margin - bbox[1]
+
+    # Hafif gölge + yarı saydam beyaz metin: hem açık hem koyu zeminde okunur
+    draw.text((x + 1, y + 1), WATERMARK_TEXT, font=font, fill=(0, 0, 0, 110))
+    draw.text((x, y), WATERMARK_TEXT, font=font, fill=(255, 255, 255, 140))
+
+    return Image.alpha_composite(img.convert("RGBA"), layer)
+
+
 def render(
     text: str,
     style: str = "plain",
@@ -248,7 +274,7 @@ def render(
     stamp_var: str | None = None,
     light_direction: tuple[int, int] | None = None,
     font_variant: str = "auto",
-    watermark: bool = False
+    watermark: bool = True
 ) -> Image.Image:
     """Latin/Göktürkçe metni alır, kompozit (doku, gölge, ışık) ile stilize PNG (PIL.Image) döner."""
     # Q2 — Yönsel ışık kaynağı normalizasyonu (Varsayılan Sol-Üst: (-1, -1))
@@ -856,6 +882,9 @@ def render(
             enhancer = ImageEnhance.Contrast(bg_rgb)
             bg_rgb = enhancer.enhance(1.0 + rng.uniform(-0.4, 0.4) * deg)
         bg = bg_rgb.convert("RGBA")
-        
+
+    if watermark:
+        bg = _apply_watermark(bg, canvas_w, canvas_h)
+
     return bg if transparent_bg else bg.convert("RGB")
 
