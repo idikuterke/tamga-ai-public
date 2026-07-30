@@ -1,42 +1,170 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="dark">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Göktürkçe Doğrulama Aracı</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Old+Turkic&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Old+Turkic&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0A0B0E',
+          surface: '#121316',
+          'surface-alt': '#1b1b1f',
+          gold: '#d4af37',
+          'gold-bright': '#f2ca50',
+          cyan: '#00e3fd',
+          ink: '#e3e2e6',
+          'ink-dim': '#9a9488'
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['Inter', 'sans-serif']
+        }
+      }
+    }
+  }
+</script>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 60px auto; padding: 0 20px; color: #1a1a1a; }
-  h1 { font-size: 1.4rem; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-  .tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; background: #eee; font-size: .9rem; }
-  .tab.active { background: #1a1a1a; color: white; }
-  #drop { border: 2px dashed #999; border-radius: 12px; padding: 48px 20px; text-align: center; cursor: pointer; transition: border-color .2s; }
-  #drop.drag { border-color: #333; background: #f5f5f5; }
-  #preview { max-width: 320px; max-height: 200px; margin: 16px auto; display: none; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    max-width: 900px; margin: 0 auto; padding: 24px 20px 60px;
+    background-color: #0A0B0E; color: #e3e2e6;
+    background-image:
+      linear-gradient(rgba(212, 175, 55, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212, 175, 55, 0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; letter-spacing: .02em; }
+
+  /* ---- Uygulama iskeleti: sol nav + orta/sağ içerik ---- */
+  .app-grid { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: start; }
+  .app-nav { position: sticky; top: 20px; }
+  @media (max-width: 800px) {
+    .app-grid { display: block; }
+    .app-nav { position: static; margin-bottom: 16px; }
+  }
+
+  .glass-panel {
+    background-color: rgba(18, 21, 28, .62);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(212, 175, 55, .22);
+    border-radius: 12px;
+  }
+
+  /* ---- Nav sekmeleri (aynı .tab / .tab.active JS API'si) ---- */
+  .tabs { display: flex; flex-direction: column; gap: 4px; padding: 10px; }
+  .tab {
+    padding: 10px 14px; border-radius: 8px; cursor: pointer;
+    background: transparent; color: #9a9488; font-size: .85rem; font-weight: 500;
+    border: 1px solid transparent; transition: all .15s ease;
+  }
+  .tab:hover { color: #e3e2e6; background: rgba(212,175,55,.08); }
+  .tab.active { background: rgba(212,175,55,.12); color: #f2ca50; border-color: rgba(212,175,55,.4); }
+  @media (max-width: 800px) {
+    .tabs { flex-direction: row; overflow-x: auto; gap: 6px; }
+    .tab { white-space: nowrap; }
+  }
+
+  /* ---- Merkez tuval ---- */
+  #drop {
+    position: relative; border: 1px dashed rgba(212,175,55,.35); border-radius: 12px;
+    padding: 48px 20px; text-align: center; cursor: pointer; transition: border-color .2s, box-shadow .2s;
+    background: rgba(255,255,255,.015);
+  }
+  #drop:hover { border-color: rgba(212,175,55,.7); box-shadow: 0 0 24px rgba(0,227,253,.08) inset; }
+  #drop.drag { border-color: #00e3fd; background: rgba(0,227,253,.05); }
+  #drop p { color: #9a9488; font-size: .9rem; }
+  /* Köşe reticle'ları — sadece dekoratif */
+  #drop::before, #drop::after,
+  .reticle-tl, .reticle-tr, .reticle-bl, .reticle-br { content: ''; }
+  .reticle-wrap { position: relative; }
+  .reticle-tl, .reticle-tr, .reticle-bl, .reticle-br {
+    position: absolute; width: 16px; height: 16px; border-color: rgba(212,175,55,.5); pointer-events: none;
+  }
+  .reticle-tl { top: 8px; left: 8px; border-top: 1px solid; border-left: 1px solid; }
+  .reticle-tr { top: 8px; right: 8px; border-top: 1px solid; border-right: 1px solid; }
+  .reticle-bl { bottom: 8px; left: 8px; border-bottom: 1px solid; border-left: 1px solid; }
+  .reticle-br { bottom: 8px; right: 8px; border-bottom: 1px solid; border-right: 1px solid; }
+  /* Hover'da tarama çizgisi (yalnız CSS, hafif) */
+  .scan-hover { position: relative; overflow: hidden; }
+  .scan-hover::after {
+    content: ''; position: absolute; left: 0; top: -20%; width: 100%; height: 2px;
+    background: #00e3fd; box-shadow: 0 0 10px #00e3fd; opacity: 0; pointer-events: none;
+  }
+  .scan-hover:hover::after { opacity: 1; animation: scan 2.2s linear infinite; }
+  @keyframes scan { 0% { top: -5%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 105%; opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .scan-hover:hover::after { animation: none; opacity: .5; } }
+
+  #preview { max-width: 320px; max-height: 200px; margin: 16px auto; display: none; border-radius: 6px; }
   #result { margin-top: 24px; }
-  .verdict { font-size: 1.2rem; font-weight: 600; padding: 12px; border-radius: 8px; }
-  .valid { background: #e6f4ea; color: #1e7e34; }
-  .invalid { background: #fdeaea; color: #c0392b; }
-  .word-block { border: 1px solid #eee; border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+  .verdict { font-size: 1.1rem; font-weight: 600; padding: 12px; border-radius: 8px; }
+  .valid { background: rgba(52,211,153,.12); color: #6ee7b3; border: 1px solid rgba(52,211,153,.3); }
+  .invalid { background: rgba(255,107,107,.1); color: #ff8f8f; border: 1px solid rgba(255,107,107,.3); }
+  .word-block { border: 1px solid rgba(212,175,55,.18); border-radius: 10px; padding: 12px 16px; margin-top: 14px; background: rgba(255,255,255,.02); }
   .word-title { font-weight: 600; margin-bottom: 6px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .88rem; }
-  td, th { padding: 5px 8px; border-bottom: 1px solid #eee; text-align: left; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .85rem; }
+  td, th { padding: 5px 8px; border-bottom: 1px solid rgba(212,175,55,.14); text-align: left; }
   .glyph, .gokturkce-output { font-family: "Noto Sans Old Turkic", sans-serif; }
   .glyph { font-size: 1.3rem; }
-  #loading { display: none; color: #666; }
-  .hint { color: #777; font-size: .85rem; margin-top: 4px; }
+  #loading { display: none; color: #9a9488; }
+  .hint { color: #9a9488; font-size: .82rem; margin-top: 4px; }
   #translateBox { display: none; }
-  #translateBox textarea { width: 100%; box-sizing: border-box; font-size: 1rem; padding: 10px; border-radius: 8px; border: 1px solid #ccc; resize: vertical; }
-  #translateBox select { margin-top: 10px; padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; }
-  #translateBox button { margin-top: 10px; margin-left: 8px; padding: 6px 16px; border-radius: 6px; border: none; background: #1a1a1a; color: white; cursor: pointer; }
-  .gokturkce-output { direction: rtl; font-size: 2.6rem; line-height: 1.4; padding: 24px; background: #f7f7f7; border-radius: 12px; margin-top: 16px; word-break: break-all; transition: font-size .1s; }
+  #translateBox textarea { width: 100%; box-sizing: border-box; font-size: 1rem; padding: 10px; border-radius: 8px;
+    border: 1px solid rgba(212,175,55,.3); resize: vertical; background: rgba(255,255,255,.03); color: #e3e2e6; }
+  #translateBox select { margin-top: 10px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(212,175,55,.3); background: #1b1b1f; color: #e3e2e6; }
+  #translateBox button { margin-top: 10px; margin-left: 8px; padding: 6px 16px; border-radius: 6px; border: none;
+    background: linear-gradient(135deg, #f2ca50, #d4af37); color: #201802; font-weight: 600; cursor: pointer; }
+  .gokturkce-output { direction: rtl; font-size: 2.6rem; line-height: 1.4; padding: 24px; background: rgba(255,255,255,.03);
+    border: 1px solid rgba(212,175,55,.18); border-radius: 12px; margin-top: 16px; word-break: break-all; transition: font-size .1s; color: #f2ca50; }
 
-  #outputControls { display: none; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; background: #f2f2f2; border-radius: 10px; font-size: .85rem; }
+  #outputControls { display: none; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(212,175,55,.15); border-radius: 10px; font-size: .85rem; color: #cfc9ba; }
   #outputControls label { display: flex; align-items: center; gap: 6px; }
-  #outputControls select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc; }
-  #outputControls button { padding: 6px 14px; border-radius: 6px; border: none; background: #1a1a1a; color: white; cursor: pointer; }
+  #outputControls select { padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(212,175,55,.3); background: #1b1b1f; color: #e3e2e6; }
+  #outputControls button { padding: 6px 14px; border-radius: 6px; border: none;
+    background: linear-gradient(135deg, #f2ca50, #d4af37); color: #201802; font-weight: 600; cursor: pointer; }
+
+  /* Genel form kontrolleri: mevcut satır-içi (inline) stilleri elle tek tek
+     değiştirmek yerine, hâlâ kullanılan renk imzalarını hedefleyerek
+     karanlık temaya çeviriyoruz -- fonksiyonel HTML'e dokunulmadı. */
+  input[style*="#ccc"], textarea[style*="#ccc"], select[style*="#ccc"] {
+    background: #1b1b1f !important; color: #e3e2e6 !important; border-color: rgba(212,175,55,.35) !important;
+  }
+  button[style*="#1a1a1a"] {
+    background: linear-gradient(135deg, #f2ca50, #d4af37) !important; color: #201802 !important; border: none !important; font-weight: 600 !important;
+  }
+  button[style*="#fff"], button[style*="white"] {
+    background: #1b1b1f !important; color: #e3e2e6 !important; border-color: rgba(212,175,55,.35) !important;
+  }
+  [style*="background: #f2f2f2"], [style*="background:#f2f2f2"],
+  [style*="background: #f8f9fa"], [style*="background:#f8f9fa"],
+  [style*="background: #fafafa"], [style*="background:#fafafa"],
+  [style*="background: #eee"], [style*="background:#eee"] {
+    background: rgba(255,255,255,.03) !important; border-color: rgba(212,175,55,.18) !important;
+  }
+  [style*="border: 1px solid #ddd"], [style*="border:1px solid #ddd"],
+  [style*="border: 1px solid #e9ecef"], [style*="border:1px solid #e9ecef"] {
+    border-color: rgba(212,175,55,.25) !important;
+  }
+  [style*="color: #444"], [style*="color:#444"], [style*="color: #555"], [style*="color:#555"],
+  [style*="color: #666"], [style*="color:#666"] { color: #b7b0a0 !important; }
+  input[type="color"] { background: transparent !important; }
+  [style*="#f9f9f9"] { background: rgba(255,255,255,.03) !important; }
+  [style*="#e0e0e0"] { border-color: rgba(212,175,55,.22) !important; }
+  [style*="#f2f7f2"] { background: rgba(0,227,253,.05) !important; }
+  [style*="#cde5cd"] { border-color: rgba(0,227,253,.25) !important; }
+  [style*="color:#4a6b4a"], [style*="color: #4a6b4a"] { color: #7fd8c9 !important; }
+  [style*="color:#777"], [style*="color: #777"] { color: #9a9488 !important; }
+  [style*="color:#888"], [style*="color: #888"] { color: #9a9488 !important; }
+  #registerForm strong, #loginForm strong { color: #f2ca50; font-family: 'Space Grotesk', sans-serif; }
+  #registerForm a, #loginForm a { color: #00e3fd; }
 
   /* Dekoratif stiller — CSS tabanlı sahte-3B (text-shadow/gradient), gerçek 3B DEĞİL */
   .gokturkce-output.style-stone {
@@ -62,12 +190,25 @@
     background: linear-gradient(160deg, #7a5230, #3f2a15);
     text-shadow: 1px 1px 0 rgba(255,220,180,.3), -1px -1px 2px rgba(0,0,0,.7), 2px 3px 5px rgba(0,0,0,.5);
   }
+
+  /* Render sekmesi: canvas + sağ ayar paneli */
+  @media (min-width: 900px) {
+    #renderBox { display: grid; grid-template-columns: 1fr 300px; grid-template-areas: "canvas panel" "result panel"; gap: 16px; }
+    #renderBox > textarea#renderInput { grid-area: canvas; margin: 0; }
+    #renderBox > div:nth-of-type(1) { grid-area: panel; margin-top: 0 !important; align-content: flex-start; }
+    #renderBox > #renderResult { grid-area: result; margin-top: 0 !important; }
+  }
 </style>
 </head>
 <body>
-  <h1>Göktürkçe (Orhun) Glyph Doğrulama</h1>
+  <header class="glass-panel mb-5 px-5 py-3 flex items-center justify-between gap-4 flex-wrap">
+    <h1 class="text-gold-bright font-bold m-0 uppercase tracking-wide flex items-center gap-2">
+      GÖKTÜRKÇE
+      <span class="text-[.65rem] font-body font-normal normal-case text-ink-dim tracking-normal">Orhun Doğrulama Aracı</span>
+    </h1>
+  </header>
 
-  <div id="authLoggedOut" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; background:#f9f9f9; border:1px solid #e0e0e0; border-radius:10px; padding:16px; margin-bottom:16px;">
+  <div id="authLoggedOut" class="glass-panel" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; padding:16px; margin-bottom:16px;">
     <form id="registerForm" style="display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1;">
       <strong>Kayıt Ol</strong>
       <input type="email" id="regEmail" placeholder="E-posta" required style="padding:6px 8px; border-radius:6px; border:1px solid #ccc;">
@@ -88,7 +229,7 @@
     </form>
   </div>
 
-  <div id="authLoggedIn" style="display:none; flex-direction:column; gap:8px; background:#f2f7f2; border:1px solid #cde5cd; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:.85rem;">
+  <div id="authLoggedIn" class="glass-panel" style="display:none; flex-direction:column; gap:8px; padding:12px 16px; margin-bottom:16px; font-size:.85rem; border-color: rgba(0,227,253,.3);">
     <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
       <span>Kalan doğrulama hakkı: <strong id="accCredits">-</strong></span>
       <span>API Key: <code id="accApiKey" style="user-select:all;">••••••••</code>
@@ -104,19 +245,23 @@
     </div>
   </div>
 
-  <div id="toolLocked" style="display:none; padding:48px 20px; text-align:center; color:#777; background:#f9f9f9; border-radius:10px; margin-top:8px;">
-    Aracı kullanmak için yukarıdan <strong>giriş yapın</strong> ya da hesap oluşturun.
+  <div id="toolLocked" class="glass-panel" style="display:none; padding:48px 20px; text-align:center; color:#9a9488; margin-top:8px;">
+    Aracı kullanmak için yukarıdan <strong style="color:#f2ca50;">giriş yapın</strong> ya da hesap oluşturun.
   </div>
 
   <div id="toolArea">
+  <div class="app-grid">
+  <nav class="app-nav glass-panel">
   <div class="tabs">
-    <div class="tab active" id="tabImage">Görsel Yükle (kelime/cümle)</div>
+    <div class="tab active" id="tabImage">Görsel Yükle</div>
     <div class="tab" id="tabSingle">Tek Glyph Testi</div>
-    <div class="tab" id="tabTranslate">Çevirici (Latin→Göktürkçe)</div>
-    <div class="tab" id="tabDecode">Deşifre (Göktürkçe→Latin)</div>
+    <div class="tab" id="tabTranslate">Çevirici</div>
+    <div class="tab" id="tabDecode">Deşifre</div>
     <div class="tab" id="tabRender">Görsel Üret</div>
-    <div class="tab" id="tabComposite" style="display:none;">Compositör (AI Görsel)</div>
+    <div class="tab" id="tabComposite" style="display:none;">Compositör</div>
   </div>
+  </nav>
+  <main class="app-main">
 
   <p id="hintImage" class="hint">Birden fazla harf içeren bir görsel yükle (kelime ya da cümle) — otomatik olarak harflere ayrılır, her biri kontrol edilir, ünlü uyumu da doğrulanır.</p>
   <p id="hintSingle" class="hint" style="display:none">Tek bir işaretin görselini yükle, model onu doğrudan sınıflandırsın.</p>
@@ -125,7 +270,8 @@
   <p id="hintRender" class="hint" style="display:none">Metin yazın, stil ve boyut seçerek Göktürkçe görsel oluşturun (API: /api/render).</p>
   <p id="hintComposite" class="hint" style="display:none">AI üretimi görselinizi yükleyip üzerinde fare ile basılı tutup sürükleyerek dikdörtgen (bbox) çizin ve Göktürkçe metni doğal oranlarında yerleştirin.</p>
 
-  <div id="drop">
+  <div id="drop" class="scan-hover reticle-wrap">
+    <span class="reticle-tl"></span><span class="reticle-tr"></span><span class="reticle-bl"></span><span class="reticle-br"></span>
     <p>Görseli buraya sürükle ya da tıkla</p>
     <img id="preview">
     <input type="file" id="fileInput" accept="image/*" style="display:none">
@@ -340,7 +486,7 @@
       </div>
     </div>
     
-    <div id="compResultArea" style="display:none; text-align: center; margin-top: 24px; border-top: 1px solid #eee; padding-top: 20px;">
+    <div id="compResultArea" style="display:none; text-align: center; margin-top: 24px; border-top: 1px solid rgba(212,175,55,.2); padding-top: 20px;">
       <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Sonuç Görseli</h3>
       <img id="compResultImg" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0 auto;">
       <div style="margin-top: 14px;">
@@ -351,6 +497,8 @@
 
   <p id="loading">Değerlendiriliyor…</p>
   <div id="result"></div>
+  </main>
+  </div>
   </div>
 
   <script>
