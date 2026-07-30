@@ -55,6 +55,10 @@ data/negatives/
 checkpoints/
 checkpoints/*
 !checkpoints/.gitkeep
+# `checkpoints/` yukarıda (leading slash yok) her derinlikte eşleşiyor,
+# bu yüzden model/checkpoints/'i tekrar açmadan içine giren hiçbir
+# !negation satırı çalışmaz (git ignore edilen dizinin içine bakmaz).
+!model/checkpoints/
 model/checkpoints/latest.pt
 model/checkpoints/latest.pt.tmp
 model/checkpoints/latest_prev.pt
@@ -62,6 +66,7 @@ model/checkpoints/train_log.txt
 model/checkpoints/DONE.txt
 # best.pt LFS ile takip edilecek (aşağıdaki .gitattributes'a bak)
 # best.pt dışındaki eğitim artefaktları ignore
+!model/checkpoints/best.pt
 NIGHT_SUMMARY_REPORT.md
 run_night_pipeline.py
 
