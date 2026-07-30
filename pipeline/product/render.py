@@ -343,8 +343,14 @@ def render(
     # 3-Katmanlı Stil Karar Tablosu ve font_variant Çözümlemesi
     style_spec = resolve_style(style)
     if font_variant and str(font_variant).lower() != "auto":
-        v_clean = str(font_variant).strip().capitalize()
-        target_font = f"Gokturk-{v_clean}.ttf"
+        v_clean = str(font_variant).strip()
+        if v_clean.lower().startswith("orkun"):
+            # "Orkun" ya da "Orkun-Bold" / "Orkun Bold" gibi değerler ->
+            # Gokturk-Orkun-{Variant}.ttf (varyant verilmezse Regular).
+            suffix = v_clean[len("orkun"):].strip("-_ ").capitalize()
+            target_font = f"Gokturk-Orkun-{suffix or 'Regular'}.ttf"
+        else:
+            target_font = f"Gokturk-{v_clean.capitalize()}.ttf"
     elif font_name not in ("NotoSansOldTurkic-Regular.ttf", "Gokturk-Regular.ttf", ""):
         target_font = font_name
     else:

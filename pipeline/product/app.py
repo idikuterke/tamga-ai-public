@@ -1144,3 +1144,9 @@ def index():
 
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+# Çevirici sekmesinin canlı önizlemesi + PNG indirme özelliği @font-face ile
+# gerçek Gokturk-*.ttf dosyalarını tarayıcıda yüklüyor (bkz. index.html).
+_FONTS_DIR = PRODUCT_DIR.parent / "fonts"
+if _FONTS_DIR.exists():
+    app.mount("/fonts", StaticFiles(directory=str(_FONTS_DIR)), name="fonts")

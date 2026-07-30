@@ -32,6 +32,19 @@
   }
 </script>
 <style>
+  /* Çevirici sekmesi font seçici -- gerçek Gokturk-*.ttf dosyaları /fonts
+     altında statik servis ediliyor (bkz. app.py). */
+  @font-face { font-family: "Gokturk Regular"; src: url("/fonts/Gokturk-Regular.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Bold"; src: url("/fonts/Gokturk-Bold.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Light"; src: url("/fonts/Gokturk-Light.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Oblique"; src: url("/fonts/Gokturk-Oblique.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Condensed"; src: url("/fonts/Gokturk-Condensed.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Orkun Regular"; src: url("/fonts/Gokturk-Orkun-Regular.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Orkun Bold"; src: url("/fonts/Gokturk-Orkun-Bold.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Orkun Light"; src: url("/fonts/Gokturk-Orkun-Light.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Orkun Oblique"; src: url("/fonts/Gokturk-Orkun-Oblique.ttf") format("truetype"); }
+  @font-face { font-family: "Gokturk Orkun Condensed"; src: url("/fonts/Gokturk-Orkun-Condensed.ttf") format("truetype"); }
+
   body {
     font-family: 'Inter', system-ui, sans-serif;
     max-width: 900px; margin: 0 auto; padding: 24px 20px 60px;
@@ -123,6 +136,22 @@
     background: linear-gradient(135deg, #f2ca50, #d4af37); color: #201802; font-weight: 600; cursor: pointer; }
   .gokturkce-output { direction: rtl; font-size: 2.6rem; line-height: 1.4; padding: 24px; background: rgba(255,255,255,.03);
     border: 1px solid rgba(212,175,55,.18); border-radius: 12px; margin-top: 16px; word-break: break-all; transition: font-size .1s; color: #f2ca50; }
+
+  /* Deşifre giriş kutusu -- eskiden inline style'daydı, JS'in başka bir
+     .gokturkce-output elementine .style.fontSize=... yazması (bkz.
+     applyOutputStyle düzeltmesi) yüzünden koruma sağlamıyordu; artık
+     kendi sınıfıyla sabit/öngörülebilir. */
+  #decodeInput.decode-input {
+    font-size: 1.3rem; line-height: 1.5; min-height: 100px; max-height: 240px;
+    overflow-y: auto; margin-top: 0; box-sizing: border-box; width: 100%;
+  }
+  /* Deşifre "En Olası Okuma" kutusu -- eskiden inline background:#fff8e1 (krem)
+     idi, koyu temaya hiç uymuyordu. */
+  .best-guess-box {
+    margin-top: 10px; padding: 8px 12px; border-radius: 4px;
+    background: rgba(243, 156, 18, .12); border-left: 4px solid #f39c12;
+  }
+  .best-guess-box strong { color: #f2ca50; }
 
   #outputControls { display: none; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px;
     background: rgba(255,255,255,.03); border: 1px solid rgba(212,175,55,.15); border-radius: 10px; font-size: .85rem; color: #cfc9ba; }
@@ -278,7 +307,7 @@
   </div>
 
   <div id="decodeBox" style="display:none;">
-    <textarea id="decodeInput" rows="3" class="gokturkce-output" style="direction:rtl; font-size:1.8rem; height:100px; margin-top:0;" placeholder="örn. 𐰉𐰆𐰑𐰣 ⁚ 𐱅𐰇𐰼𐰜𐰢"></textarea>
+    <textarea id="decodeInput" rows="3" class="gokturkce-output decode-input" placeholder="örn. 𐰉𐰆𐰑𐰣 ⁚ 𐱅𐰇𐰼𐰜𐰢"></textarea>
     <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <select id="decodeMode" style="padding:6px 12px; border-radius:6px; border:1px solid #ccc; font-size:0.9rem; background:#fff;">
         <option value="auto">Otomatik (auto)</option>
@@ -303,6 +332,16 @@
       <label>Font:
         <select id="fontSelect">
           <option value='"Noto Sans Old Turkic"'>Noto Sans Old Turkic</option>
+          <option value='"Gokturk Regular"'>Gokturk Regular</option>
+          <option value='"Gokturk Bold"'>Gokturk Bold</option>
+          <option value='"Gokturk Light"'>Gokturk Light</option>
+          <option value='"Gokturk Oblique"'>Gokturk Oblique</option>
+          <option value='"Gokturk Condensed"'>Gokturk Condensed</option>
+          <option value='"Gokturk Orkun Regular"'>Orkun Regular</option>
+          <option value='"Gokturk Orkun Bold"'>Orkun Bold</option>
+          <option value='"Gokturk Orkun Light"'>Orkun Light</option>
+          <option value='"Gokturk Orkun Oblique"'>Orkun Oblique</option>
+          <option value='"Gokturk Orkun Condensed"'>Orkun Condensed</option>
         </select>
       </label>
 
@@ -359,11 +398,16 @@
       <label style="display: flex; align-items: center; gap: 6px;">Font İskelet:
         <select id="renderFontVariant" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;">
           <option value="auto">(Otomatik - Stile Göre)</option>
-          <option value="Regular">Gokturk Regular</option>
-          <option value="Bold">Gokturk Bold</option>
-          <option value="Light">Gokturk Light</option>
-          <option value="Oblique">Gokturk Oblique</option>
-          <option value="Condensed">Gokturk Condensed</option>
+          <option value="Regular">Noto Regular</option>
+          <option value="Bold">Noto Bold</option>
+          <option value="Light">Noto Light</option>
+          <option value="Oblique">Noto Oblique</option>
+          <option value="Condensed">Noto Condensed</option>
+          <option value="Orkun-Regular">Orkun Regular</option>
+          <option value="Orkun-Bold">Orkun Bold</option>
+          <option value="Orkun-Light">Orkun Light</option>
+          <option value="Orkun-Oblique">Orkun Oblique</option>
+          <option value="Orkun-Condensed">Orkun Condensed</option>
         </select>
       </label>
       
@@ -883,7 +927,10 @@
     });
 
     function applyOutputStyle() {
-      const el = document.querySelector('.gokturkce-output');
+      // NOT: document.querySelector('.gokturkce-output') KULLANMA -- #decodeInput
+      // de bu sınıfı taşıyor ve DOM'da her zaman bu elementten önce geliyor,
+      // querySelector ilkini (decodeInput'u) seçip yanlışlıkla onu boyutlandırıyordu.
+      const el = document.getElementById('translateOutput');
       if (!el) return;
       
       const size = fontSizeSlider.value;
@@ -1069,7 +1116,7 @@
       `).join('');
 
       resultEl.innerHTML = `
-        <div class="gokturkce-output">${data.gokturkce_text || '—'}</div>
+        <div id="translateOutput" class="gokturkce-output">${data.gokturkce_text || '—'}</div>
         <div style="margin-top: 10px; text-align: right;">
           <button onclick="if(document.getElementById('compTextInput')){document.getElementById('compTextInput').value='${(data.gokturkce_text || '').replace(/'/g, "\\'")}'; setMode('composite');}" style="padding: 6px 14px; border-radius: 6px; border: 1px solid #1a1a1a; background: #fff; color: #1a1a1a; cursor: pointer; font-size: 0.85rem; font-weight: 600;">📌 Bu Metni Compositör'e Taşı</button>
         </div>
@@ -1085,7 +1132,7 @@
     // ---- PNG olarak indir (canvas'a çizerek, seçili boyut/renk/stili uygular) ----
 
     async function downloadOutputAsPng() {
-      const el = document.querySelector('.gokturkce-output');
+      const el = document.getElementById('translateOutput');
       if (!el) return;
       const text = el.textContent.trim();
       if (!text || text === '—') return;
@@ -1416,8 +1463,8 @@
           // hiç göndermiyor, sadece fonetik en-olası-okumayı gösteriyoruz.
           const bestGuess = w.best_guess_reading;
           if (bestGuess) {
-            html += `<div style="margin-top:10px; padding: 8px 12px; background:#fff8e1; border-left:4px solid #f39c12; border-radius:4px;">`;
-            html += `<strong style="color:#b8860b;">En Olası Okuma:</strong> <span style="font-size:1.1rem; font-weight:600;">${bestGuess}</span>`;
+            html += `<div class="best-guess-box">`;
+            html += `<strong>En Olası Okuma:</strong> <span style="font-size:1.1rem; font-weight:600;">${bestGuess}</span>`;
             html += `</div>`;
           }
         }
