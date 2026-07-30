@@ -127,6 +127,12 @@ storage/
 # ama texture'lar (büyük görsel) ignore edilecek
 pipeline/product/textures/
 !pipeline/product/textures/.gitkeep
+# Orijinal büyük PNG'ler yerelde kalıyor (üstteki blanket-ignore geçerli);
+# sıkıştırılmış .webp'ler normal git objesi olarak takip ediliyor (1.9MB
+# toplam, LFS'e gerek yok). `!dir/` yukarıdaki tam-dizin ignore'unu açmadan
+# içerideki dosyaları negate etmek çalışmaz (best.pt'de düşülen tuzak).
+!pipeline/product/textures/
+!pipeline/product/textures/*.webp
 
 # ===== OS / Geçici =====
 *.tmp

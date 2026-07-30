@@ -1,9 +1,12 @@
 import sys
 import json
+import logging
 import random
 import math
 from pathlib import Path
 import numpy as np
+
+logger = logging.getLogger("gokturk.render")
 
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageColor, ImageChops, ImageOps
 
@@ -78,6 +81,23 @@ def get_texture_variations(style: str) -> list[Path]:
     return sorted(matches)
 
 get_texture_variants = get_texture_variations
+
+
+def _resolve_texture_file(name: str) -> Path | None:
+    """Verilen doku adını dosya sistemine çözer. .webp'yi .png'den önce
+    dener (üretimde artık sadece .webp var); .png fallback yerelde eski
+    dosyalarla çalışmaya devam etsin diye korunuyor."""
+    tex_dir = PRODUCT_DIR / "textures"
+    stem = Path(name).stem if Path(name).suffix else str(name)
+    for ext in (".webp", ".png"):
+        candidate = tex_dir / f"{stem}{ext}"
+        if candidate.exists():
+            return candidate
+    # Verilen ad zaten .webp/.png dışında bir uzantıyla geldiyse son çare
+    candidate = tex_dir / name
+    if candidate.exists():
+        return candidate
+    return None
 
 # Lazy loading of schema and engine
 _schema = None
@@ -404,12 +424,8 @@ def render(
     else:
         tex_param = texture or texture_var
         if tex_param:
-            candidate = PRODUCT_DIR / "textures" / tex_param
-            if not candidate.exists() and not str(tex_param).endswith(".png"):
-                candidate = PRODUCT_DIR / "textures" / f"{tex_param}.png"
-            if candidate.exists():
-                tex_file = candidate
-            else:
+            tex_file = _resolve_texture_file(tex_param)
+            if not tex_file:
                 variations = get_texture_variants(tex_param)
                 if variations:
                     tex_file = random.choice(variations)
@@ -417,10 +433,8 @@ def render(
             sug = STYLE_TO_TEXTURE_SUGGESTION.get(style)
             if sug:
                 sug_name = sug[0] if isinstance(sug, (list, tuple)) else sug
-                candidate = PRODUCT_DIR / "textures" / sug_name
-                if candidate.exists():
-                    tex_file = candidate
-                else:
+                tex_file = _resolve_texture_file(sug_name)
+                if not tex_file:
                     variations = get_texture_variants(sug_name)
                     if variations:
                         tex_file = random.choice(variations)
@@ -434,7 +448,13 @@ def render(
                     candidate = PRODUCT_DIR / texture_path
                     if candidate.exists():
                         tex_file = candidate
-                    
+
+        if not tex_file:
+            logger.warning(
+                "Doku bulunamadı (texture=%r, texture_var=%r, style=%r) -- "
+                "düz renk/gradient'e düşülüyor.", texture, texture_var, style
+            )
+
         if tex_file and tex_file.exists():
             try:
                 tex_img = Image.open(tex_file).convert("RGBA")
