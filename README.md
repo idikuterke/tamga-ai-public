@@ -10,7 +10,7 @@ web servisi.
 
 ## Canlı Demo
 
-- (Render.com'a deploy edildikten sonra URL'i buraya ekleyin)
+- https://tamga-ai-public.onrender.com/
 
 ## Mimari
 
