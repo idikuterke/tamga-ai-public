@@ -234,7 +234,7 @@ def create_background(size: int | tuple[int, int], style_cfg: dict, background_c
         
     return img
 
-WATERMARK_TEXT = "tamga-ai-public.onrender.com"
+WATERMARK_TEXT = "ONOZ Labs"
 
 
 def _apply_watermark(img: Image.Image, canvas_w: int, canvas_h: int) -> Image.Image:
