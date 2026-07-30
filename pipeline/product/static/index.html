@@ -226,34 +226,8 @@
       <button id="renderBtn" style="padding: 6px 14px; border-radius: 6px; border: none; background: #1a1a1a; color: white; cursor: pointer;">Görsel Üret</button>
     </div>
 
-    <div style="margin-top:12px; display:flex; gap:16px; align-items:center; background:#f9f9f9; padding: 12px 16px; border-radius:10px; font-size:.85rem; border:1px solid #e0e0e0; flex-wrap:wrap;">
-      <span style="font-weight:600;">Çıktı Tipi:</span>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-        <input type="radio" name="outputType" value="png" checked> PNG
-      </label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-        <input type="radio" name="outputType" value="mp4"> MP4 Video
-      </label>
-
-      <div id="videoOptions" style="display:none; gap:14px; align-items:center; margin-left:auto; flex-wrap:wrap;">
-        <label style="display: flex; align-items: center; gap: 6px;">Motion (Hareket):
-          <select id="renderMotion" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;">
-            <option value="parallax" selected>3D Derinlik (Parallax)</option>
-            <option value="zoom">Yakınlaşma (Zoom)</option>
-            <option value="pan">Sağdan Sola Kaydırma (Pan)</option>
-            <option value="fade">Yumuşak Geçiş (Fade)</option>
-          </select>
-        </label>
-        <label style="display: flex; align-items: center; gap: 6px;">Süre: 
-          <input type="range" id="renderDuration" min="3" max="10" step="1" value="5"> 
-          <span id="renderDurationLabel">5s</span>
-        </label>
-      </div>
-    </div>
-
     <div id="renderResult" style="margin-top: 20px; display: none; text-align: center;">
       <img id="renderPreview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 0 auto;">
-      <video id="renderPreviewVideo" controls autoplay loop muted class="w-full rounded-lg shadow-md" style="display: none; max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 0 auto;"></video>
       <div style="margin-top: 12px;">
         <a id="renderDownloadBtn" download="gokturkce_render.png" style="display: inline-block; padding: 8px 16px; background: #1a1a1a; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem;">PNG İndir</a>
       </div>
@@ -394,12 +368,7 @@
     const renderBtn = document.getElementById('renderBtn');
     const renderResult = document.getElementById('renderResult');
     const renderPreview = document.getElementById('renderPreview');
-    const renderPreviewVideo = document.getElementById('renderPreviewVideo');
     const renderDownloadBtn = document.getElementById('renderDownloadBtn');
-    const videoOptions = document.getElementById('videoOptions');
-    const renderMotion = document.getElementById('renderMotion');
-    const renderDuration = document.getElementById('renderDuration');
-    const renderDurationLabel = document.getElementById('renderDurationLabel');
 
     let isBold = false;
     let isItalic = false;
@@ -444,7 +413,6 @@
 
     renderSize.addEventListener('input', () => renderSizeLabel.textContent = renderSize.value);
     renderDegradation.addEventListener('input', () => renderDegradationLabel.textContent = renderDegradation.value);
-    renderDuration.addEventListener('input', () => renderDurationLabel.textContent = renderDuration.value + 's');
     renderBtn.addEventListener('click', handleRender);
 
     let lockCustomColor = false;
@@ -527,16 +495,6 @@
       document.getElementById('renderFontVariant').dataset.userOverridden = 'true';
     });
 
-    document.querySelectorAll('input[name="outputType"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        const isMp4 = document.querySelector('input[name="outputType"]:checked').value === 'mp4';
-        videoOptions.style.display = isMp4 ? 'flex' : 'none';
-        renderBtn.textContent = isMp4 ? 'Video Üret' : 'Görsel Üret';
-        const transparentContainer = document.getElementById('renderTransparentContainer');
-        if (transparentContainer) transparentContainer.style.display = isMp4 ? 'none' : 'flex';
-      });
-    });
-
     function applyOutputStyle() {
       const el = document.querySelector('.gokturkce-output');
       if (!el) return;
@@ -611,10 +569,7 @@
         return;
       }
       
-      const outputType = document.querySelector('input[name="outputType"]:checked').value;
-      const isMp4 = outputType === 'mp4';
-
-      loading.textContent = isMp4 ? 'Render ediliyor (Bu birkaç saniye sürebilir)...' : 'Değerlendiriliyor…';
+      loading.textContent = 'Değerlendiriliyor…';
       loading.style.display = 'block';
       resultEl.innerHTML = '';
       renderResult.style.display = 'none';
@@ -637,21 +592,14 @@
         size: parseInt(renderSize.value, 10),
         degradation: parseFloat(renderDegradation.value),
         text_color: textColor,
-        transparent_bg: !isMp4 && transparentBg,
+        transparent_bg: transparentBg,
         texture_var: document.getElementById('renderTexture')?.value || null,
         light_direction: lightDir,
         font_variant: document.getElementById('renderFontVariant')?.value || 'auto'
       };
 
-      if (isMp4) {
-        payload.motion = renderMotion.value;
-        payload.duration = parseInt(renderDuration.value, 10);
-      }
-      
-      const endpoint = isMp4 ? '/api/render_video' : '/api/render';
-      
       try {
-        const res = await fetch(endpoint, {
+        const res = await fetch('/api/render', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -667,26 +615,16 @@
         
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
-        
-        if (isMp4) {
-          renderPreview.style.display = 'none';
-          renderPreviewVideo.style.display = 'block';
-          renderPreviewVideo.src = url;
-          renderDownloadBtn.download = 'gokturkce_video.mp4';
-          renderDownloadBtn.textContent = 'MP4 Video İndir';
+
+        renderPreview.style.display = 'block';
+        renderPreview.src = url;
+        if (transparentBg) {
+          renderPreview.style.background = 'repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 20px 20px';
         } else {
-          renderPreviewVideo.style.display = 'none';
-          renderPreviewVideo.pause();
-          renderPreview.style.display = 'block';
-          renderPreview.src = url;
-          if (transparentBg) {
-            renderPreview.style.background = 'repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 20px 20px';
-          } else {
-            renderPreview.style.background = 'none';
-          }
-          renderDownloadBtn.download = 'gokturkce_render.png';
-          renderDownloadBtn.textContent = 'PNG İndir';
+          renderPreview.style.background = 'none';
         }
+        renderDownloadBtn.download = 'gokturkce_render.png';
+        renderDownloadBtn.textContent = 'PNG İndir';
 
         renderDownloadBtn.href = url;
         renderResult.style.display = 'block';

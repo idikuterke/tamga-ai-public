@@ -76,9 +76,7 @@ pipeline/__pycache__/
 
 # ===== Test / Debug Çıktıları =====
 pipeline/product/test_*.png
-pipeline/product/test_*.mp4
 pipeline/product/verify_*.png
-pipeline/product/verify_*.mp4
 pipeline/product/dump_segments.py
 pipeline/product/test_*.py
 pipeline/product/verify_*.py

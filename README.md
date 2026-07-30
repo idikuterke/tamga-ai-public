@@ -124,7 +124,6 @@ Render build pipeline'ı GitHub entegrasyonu üzerinden LFS objelerini otomatik
 | POST   | `/translate`          | Latin → Göktürkçe class_id dizisi       | API  |
 | POST   | `/decode_text`        | Göktürkçe Unicode metin → okunuş        | API  |
 | POST   | `/api/render`         | Metin → PNG (stil + texture)            | API  |
-| POST   | `/api/render_video`   | Metin → MP4 (parallax/zoom/pan/fade)    | API  |
 | POST   | `/api/composite`      | Metin → baz görsel üzerine kompozit     | API  |
 | GET    | `/api/model_info`     | Model meta (sürüm, doğruluk eşiği)      | —    |
 | GET    | `/api/config`         | FE için feature flag'ler                 | —    |

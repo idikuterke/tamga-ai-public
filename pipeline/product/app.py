@@ -80,10 +80,7 @@ class InterestRequest(BaseModel):
 
 from rules_engine import OrthographyRuleEngine, SpellingEngine, SpellingDecoder
 from render import render as render_img, STYLES
-from video import VideoRenderer
 from compositor import composite_text
-
-video_renderer = VideoRenderer()
 
 # 07_segment_word.py, product/ klasörünün bir üstünde (pipeline/) duruyor.
 # Modül adı rakamla başladığı için normal import çalışmaz, dosya yolundan yükle.
@@ -548,22 +545,6 @@ class RenderRequest(BaseModel):
     font_variant: Optional[str] = Field(default="auto", max_length=32)
 
 
-class RenderVideoRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=2_000)
-    style: str = "plain"
-    motion: str = "parallax"
-    duration: int = Field(5, ge=1, le=30)
-    size: int = Field(512, ge=64, le=2048)
-    degradation: float = Field(0.0, ge=0.0, le=1.0)
-    text_color: Optional[str] = Field(default=None, max_length=16)
-    transparent_bg: bool = False
-    texture: Optional[str] = Field(default=None, max_length=64)
-    texture_var: Optional[str] = Field(default=None, max_length=64)
-    stamp_var: Optional[str] = Field(default=None, max_length=64)
-    light_direction: Optional[tuple[int, int]] = None
-    font_variant: Optional[str] = Field(default="auto", max_length=32)
-
-
 class DecodeTextRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=10_000)
     mode: str = Field("auto", pattern="^(auto|geleneksel|modern)$")
@@ -891,44 +872,6 @@ async def api_render(request: Request, req: RenderRequest, user: dict = Depends(
         img_byte_arr = img_byte_arr.getvalue()
         
         return Response(content=img_byte_arr, media_type="image/png")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/render_video")
-@limiter.limit(f"{RATE_LIMIT_MINUTE}/minute; {RATE_LIMIT_DAY}/day")
-async def api_render_video(request: Request, req: RenderVideoRequest, user: dict = Depends(get_current_user)):
-    if not req.text or not req.text.strip():
-        raise HTTPException(status_code=400, detail="Text cannot be empty")
-    if req.style not in STYLES:
-        raise HTTPException(status_code=400, detail=f"Invalid style. Must be one of: {', '.join(STYLES.keys())}")
-    if req.motion not in ["parallax", "zoom", "pan", "fade"]:
-        raise HTTPException(status_code=400, detail="Invalid motion. Must be one of: parallax, zoom, pan, fade")
-    
-    try:
-        img = render_img(
-            text=req.text,
-            style=req.style,
-            size=req.size,
-            degradation=req.degradation,
-            text_color=req.text_color,
-            transparent_bg=req.transparent_bg,
-            texture=req.texture,
-            texture_var=req.texture_var,
-            stamp_var=req.stamp_var,
-            light_direction=req.light_direction,
-            font_variant=req.font_variant or "auto",
-            watermark=(user.get('tier') == 'free')
-        )
-        
-        video_bytes = video_renderer.render_to_video(
-            image=img,
-            motion=req.motion,
-            duration=req.duration,
-            fps=30
-        )
-        
-        return Response(content=video_bytes, media_type="video/mp4")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

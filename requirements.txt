@@ -41,9 +41,6 @@ torchvision==0.21.0
 numpy==2.2.0
 Pillow==11.0.0
 scipy==1.14.1
-transformers>=4.45.0
-imageio>=2.35.0
-imageio-ffmpeg>=0.5.1
 
 # --- Font araçları (render için) ---
 fonttools==4.55.6
