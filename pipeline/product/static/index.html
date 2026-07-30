@@ -115,7 +115,7 @@
   <p id="hintImage" class="hint">Birden fazla harf içeren bir görsel yükle (kelime ya da cümle) — otomatik olarak harflere ayrılır, her biri kontrol edilir, ünlü uyumu da doğrulanır.</p>
   <p id="hintSingle" class="hint" style="display:none">Tek bir işaretin görselini yükle, model onu doğrudan sınıflandırsın.</p>
   <p id="hintTranslate" class="hint" style="display:none">Latin harflerle bir metin yaz, Göktürkçeye çevrilsin. "Geleneksel" mod ünlü düşürme/ligatür kurallarını uygular; "Modern" mod harf-harf birebir eşler.</p>
-  <p id="hintDecode" class="hint" style="display:none">Göktürkçe Unicode metni (ör. 𐰉𐰆𐰑𐰣 ⁚ 𐱅𐰇𐰼𐰜𐰢) yapıştırın — harfler otomatik deşifre edilip etimolojik EDPT sözlüğünde sorgulansın.</p>
+  <p id="hintDecode" class="hint" style="display:none">Göktürkçe Unicode metni (ör. 𐰉𐰆𐰑𐰣 ⁚ 𐱅𐰇𐰼𐰜𐰢) yapıştırın — harfler otomatik deşifre edilip en olası Latin okunuşu üretilsin.</p>
   <p id="hintRender" class="hint" style="display:none">Metin yazın, stil ve boyut seçerek Göktürkçe görsel oluşturun (API: /api/render).</p>
   <p id="hintComposite" class="hint" style="display:none">AI üretimi görselinizi yükleyip üzerinde fare ile basılı tutup sürükleyerek dikdörtgen (bbox) çizin ve Göktürkçe metni doğal oranlarında yerleştirin.</p>
 
@@ -1254,60 +1254,13 @@
         if (w.warning) {
           html += `<div style="color:#c0392b; margin-top:8px; font-weight:600;">${w.warning}</div>`;
         } else {
-
-          // --- KATMAN 1: Sözlükte kesin eşleşenler (yeşil) ---
-          const confirmed = w.dictionary_confirmed || [];
-          const matched = w.dictionary_matched_candidates || [];
-          if (confirmed.length > 0) {
-            html += `<div style="margin-top:10px; font-weight:600; color:#1e7e34;">✅ Sözlükte Doğrulananlar (${confirmed.length}):</div>`;
-            html += `<table><thead><tr><th>Aday</th><th>EDPT Sayfa</th></tr></thead><tbody>`;
-            // dedupe by raw_headword
-            const seen = new Set();
-            confirmed.forEach(e => {
-              if (seen.has(e.raw_headword)) return;
-              seen.add(e.raw_headword);
-              html += `<tr>
-                <td><strong style="color:#1e7e34;">${e.normalized}</strong> <small style="color:#666;">(${e.raw_headword})</small></td>
-                <td><span style="background:#e6f4ea; color:#1e7e34; padding:2px 6px; border-radius:4px; font-weight:600;">Sayfa ${e.edpt_page || '—'}</span></td>
-              </tr>`;
-            });
-            html += `</tbody></table>`;
-          } else {
-            html += `<div style="margin-top:10px; color:#c0392b; font-weight:600;">❌ Sözlükte eşleşen bulunamadı</div>`;
-          }
-
-          // --- KATMAN 2: En olası tahmin (turuncu) ---
+          // Sözlük (EDPT) doğrulaması public sürümde yok -- backend bu alanları
+          // hiç göndermiyor, sadece fonetik en-olası-okumayı gösteriyoruz.
           const bestGuess = w.best_guess_reading;
           if (bestGuess) {
-            const isConfirmed = confirmed.some(e => e.normalized === bestGuess || e.raw_headword.replace(/:/g,'') === bestGuess);
-            if (!isConfirmed || confirmed.length === 0) {
-              html += `<div style="margin-top:10px; padding: 8px 12px; background:#fff8e1; border-left:4px solid #f39c12; border-radius:4px;">`;
-              html += `<strong style="color:#b8860b;">🟡 En Olası Okuma (doğrulanmadı):</strong> <span style="font-size:1.1rem; font-weight:600;">${bestGuess}</span>`;
-              html += `</div>`;
-            } else {
-              // Sözlükte de var - yeşil olarak göster
-              html += `<div style="margin-top:6px; padding: 6px 12px; background:#e6f4ea; border-left:4px solid #1e7e34; border-radius:4px;">`;
-              html += `<strong style="color:#1e7e34;">🟢 En Olası Okuma (sözlükte doğrulandu):</strong> <span style="font-size:1.1rem; font-weight:600;">${bestGuess}</span>`;
-              html += `</div>`;
-            }
-          }
-
-          // --- KATMAN 3: Diğer adaylar (gri, katlanmış) ---
-          const unmatched = w.unmatched_candidates || [];
-          if (unmatched.length > 0) {
-            const otherId = 'others_' + idx;
-            html += `<div style="margin-top:8px;">`;
-            html += `<button onclick="document.getElementById('${otherId}').style.display=document.getElementById('${otherId}').style.display==='none'?'block':'none'" 
-              style="background:none; border:1px solid #ccc; padding:3px 10px; border-radius:4px; cursor:pointer; font-size:0.82rem; color:#555;">
-              ▼ Diğer ${unmatched.length} adayı göster
-            </button>`;
-            html += `<div id="${otherId}" style="display:none; margin-top:6px; font-size:0.82rem; color:#888; padding:6px; background:#f9f9f9; border-radius:4px;">`;
-            html += unmatched.map(u => `<code style="margin-right:6px;">${u.candidate}</code>`).join(' ');
-            html += `</div></div>`;
-          }
-
-          if (w.dictionary_note) {
-            html += `<div style="font-size:0.8rem; color:#777; margin-top:8px; font-style:italic;">ℹ️ ${w.dictionary_note}</div>`;
+            html += `<div style="margin-top:10px; padding: 8px 12px; background:#fff8e1; border-left:4px solid #f39c12; border-radius:4px;">`;
+            html += `<strong style="color:#b8860b;">En Olası Okuma:</strong> <span style="font-size:1.1rem; font-weight:600;">${bestGuess}</span>`;
+            html += `</div>`;
           }
         }
 

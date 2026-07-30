@@ -800,17 +800,12 @@ async def predict_image(request: Request, file: UploadFile = File(...), user: di
 
         sound_hint_seq = "-".join([s for s in sound_hints if s])
 
-        decoder_res = spelling_decoder.decode_sequence(sequence) if spelling_decoder else {}
-
         words_out.append({
             "glyphs": w,
             "orthography": harmony,
             "sound_hints": sound_hints,
             "sound_hint_sequence": sound_hint_seq,
             "word_valid": word_valid,
-            "dictionary_matched_candidates": decoder_res.get("dictionary_matched_candidates", []),
-            "unmatched_candidates": decoder_res.get("unmatched_candidates", []),
-            "dictionary_note": decoder_res.get("dictionary_note", ""),
         })
 
     all_confidences = [g["confidence"] for w in words_raw for g in w]
