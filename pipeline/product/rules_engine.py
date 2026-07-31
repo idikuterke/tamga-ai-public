@@ -228,7 +228,7 @@ class SpellingEngine:
         return word
 
     def _normalize(self, word):
-        word = word.lower()
+        word = word.replace('İ', 'i').replace('I', 'ı').lower()
         word = self._apply_digraphs(word)
         return "".join(MODERN_LETTER_MAP.get(ch, ch) for ch in word)
 
@@ -288,7 +288,7 @@ class SpellingEngine:
         return out
 
     def _letter_by_letter_word(self, raw_word):
-        word = raw_word.lower()
+        word = raw_word.replace('İ', 'i').replace('I', 'ı').lower()
         word = self._apply_digraphs(word)
         word = "".join(MODERN_LETTER_MAP.get(ch, ch) for ch in word)
         vowel_positions = [i for i, ch in enumerate(word) if self._base_vowel(ch) is not None]
