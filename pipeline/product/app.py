@@ -772,7 +772,25 @@ async def predict_image(request: Request, file: UploadFile = File(...), user: di
                 margin_ratio=0.28,
                 size=256,
             )
-            result = bundle.predict(crop)
+            
+            # --- BAND-AID PATCH: Inference-Time Binarization ---
+            # Model, beyaz zemin üzerine siyah yazı formatında eğitildiği için,
+            # koyu/dokulu ürün görsellerini eşikleyerek modelin domain'ine yaklaştırıyoruz.
+            crop_gray = np.array(crop.convert("L"))
+            crop_thresh, _ = cv2.threshold(crop_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+            crop_borders = np.concatenate([crop_gray[0, :], crop_gray[-1, :], crop_gray[:, 0], crop_gray[:, -1]])
+            crop_bg_is_light = np.median(crop_borders) > crop_thresh
+            if crop_bg_is_light:
+                crop_binary = crop_gray < crop_thresh
+            else:
+                crop_binary = crop_gray > crop_thresh
+            
+            bin_img_np = np.ones_like(crop_gray) * 255
+            bin_img_np[crop_binary] = 0
+            crop_binarized = Image.fromarray(bin_img_np).convert("RGB")
+            # ---------------------------------------------------
+            
+            result = bundle.predict(crop_binarized)
             current.append({
                 "type": "glyph",
                 "box": box,
